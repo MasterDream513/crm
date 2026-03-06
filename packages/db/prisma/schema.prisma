@@ -1,0 +1,468 @@
+// ============================================================
+//  Prisma Schema — CRM / Sales / KPI Platform  (Phase 1 + stubs)
+//  Convention: every table has tenant_id, created_at, updated_at,
+//              deleted_at (soft delete).
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  VIEWER
+}
+
+enum CustomerRank {
+  RANK_1 // Free only, no repeat
+  RANK_2 // Up to ¥30,000
+  RANK_3 // Up to ¥100,000
+  RANK_4 // Up to ¥500,000
+  RANK_5 // Up to ¥1,000,000
+  RANK_6 // ¥1,000,000+
+}
+
+enum BillingType {
+  ONE_TIME
+  RECURRING_MONTHLY
+  RECURRING_ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum FollowLogType {
+  CALL      // 電話
+  LINE
+  MEETING   // 面談
+  EMAIL     // メール
+  LETTER    // レター・DM
+  OTHER     // その他
+}
+
+enum AttendanceStatus {
+  REGISTERED
+  ATTENDED
+  NO_SHOW
+}
+
+enum ProspectStage {
+  LEAD
+  SEMINAR
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum ProductCategory {
+  LIST_ACQUISITION // リスト獲得
+  INDIVIDUAL       // 個別面談
+  SEMINAR          // セミナー
+  ONLINE_COURSE    // オンライン教材
+  SUBSCRIPTION     // サブスク
+}
+
+enum KpiPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum IntegrationType {
+  UTAGE
+  FREEE
+  GOOGLE_ANALYTICS
+  META_ADS
+  CLICKFUNNELS
+}
+
+// ─────────────────────────────────────────────────────────────
+//  PHASE 1 TABLES
+// ─────────────────────────────────────────────────────────────
+
+model Tenant {
+  id         String   @id @default(uuid())
+  name       String
+  plan       String   @default("starter")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  settings        TenantSettings?
+  users           User[]
+  customers       Customer[]
+  prospects       Prospect[]
+  products        Product[]
+  transactions    Transaction[]
+  expenses        Expense[]
+  followLogs      FollowLog[]
+  events          Event[]
+  referrals       Referral[]
+  kpiSnapshots    KpiSnapshot[]
+  // Phase 2 stubs
+  webhookLogs     WebhookLog[]
+  integrations    Integration[]
+  marketingFunnel MarketingFunnel[]
+
+  @@map("tenants")
+}
+
+model TenantSettings {
+  id                  String   @id @default(uuid())
+  tenantId            String   @unique @map("tenant_id")
+  churnThresholdDays  Int      @default(90) @map("churn_threshold_days")
+  maCpsMarginRate     Float    @default(0.60) @map("ma_cps_margin_rate")
+  currency            String   @default("JPY")
+  timezone            String   @default("Asia/Tokyo")
+  dailyHandledMethod  String   @default("follow_log_autocount") @map("daily_handled_method")
+  rankThresholds      Json     @default("{\"rank2\":30000,\"rank3\":100000,\"rank4\":500000,\"rank5\":1000000}") @map("rank_thresholds")
+  enabledIntegrations Json     @default("[]") @map("enabled_integrations")
+  extra               Json     @default("{}") @map("extra")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_settings")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  email     String
+  role      UserRole  @default(VIEWER)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  followLogs FollowLog[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model Customer {
+  id               String       @id @default(uuid())
+  tenantId         String       @map("tenant_id")
+  // Basic info (confirmed fields)
+  name             String
+  phone            String?
+  address          String?
+  email            String?
+  acquisitionSource String?     @map("acquisition_source")
+  firstContactDate DateTime?    @map("first_contact_date")
+  notes            String?
+  // Rank (auto-calculated)
+  rank             CustomerRank @default(RANK_1)
+  cumulativeSpend  Int          @default(0) @map("cumulative_spend")
+  lastPurchaseDate DateTime?    @map("last_purchase_date")
+  // Referral
+  referredById     String?      @map("referred_by_id")
+  // Phase 2 stubs
+  sourceId         String?      @map("source_id")       // UTAGE contact ID
+  webhookPayload   Json?        @map("webhook_payload")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  referredBy      Customer?       @relation("Referrals", fields: [referredById], references: [id])
+  referredCustomers Customer[]    @relation("Referrals")
+  transactions    Transaction[]
+  followLogs      FollowLog[]
+  eventAttendees  EventAttendee[]
+  referralsGiven  Referral[]      @relation("ReferrerCustomer")
+  referralsReceived Referral[]    @relation("ReferredCustomer")
+
+  @@map("customers")
+}
+
+model Prospect {
+  id               String        @id @default(uuid())
+  tenantId         String        @map("tenant_id")
+  name             String
+  phone            String?
+  email            String?
+  acquisitionSource String?      @map("acquisition_source")
+  stage            ProspectStage @default(LEAD)
+  notes            String?
+  sourceId         String?       @map("source_id")
+  webhookPayload   Json?         @map("webhook_payload")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  deletedAt        DateTime?     @map("deleted_at")
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  followLogs FollowLog[]
+  eventAttendees EventAttendee[]
+
+  @@map("prospects")
+}
+
+model Product {
+  id          String          @id @default(uuid())
+  tenantId    String          @map("tenant_id")
+  name        String
+  priceJpy    Int             @map("price_jpy")         // tax-included, in yen
+  category    ProductCategory
+  billingType BillingType     @default(ONE_TIME) @map("billing_type")
+  isActive    Boolean         @default(true) @map("is_active")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  deletedAt   DateTime?       @map("deleted_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  transactions Transaction[]
+
+  @@map("products")
+}
+
+model Transaction {
+  id                 String             @id @default(uuid())
+  tenantId           String             @map("tenant_id")
+  customerId         String             @map("customer_id")
+  productId          String?            @map("product_id")   // null = free-amount entry
+  amountJpy          Int                @map("amount_jpy")
+  billingType        BillingType        @default(ONE_TIME) @map("billing_type")
+  subscriptionStatus SubscriptionStatus? @map("subscription_status")
+  transactionDate    DateTime           @map("transaction_date")
+  note               String?
+  // Freee sync prep (Phase 2)
+  freeeTransactionId String?            @map("freee_transaction_id")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  deletedAt          DateTime?          @map("deleted_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  customer Customer  @relation(fields: [customerId], references: [id])
+  product  Product?  @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, transactionDate])
+  @@index([tenantId, customerId])
+  @@map("transactions")
+}
+
+model Expense {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  label       String
+  amountJpy   Int       @map("amount_jpy")
+  category    String    // e.g. "広告費", "人件費", "システム費"
+  expenseDate DateTime  @map("expense_date")
+  note        String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, expenseDate])
+  @@map("expenses")
+}
+
+model FollowLog {
+  id          String        @id @default(uuid())
+  tenantId    String        @map("tenant_id")
+  customerId  String?       @map("customer_id")
+  prospectId  String?       @map("prospect_id")
+  userId      String?       @map("user_id")        // who did the follow-up
+  type        FollowLogType
+  logDate     DateTime      @map("log_date")
+  notes       String?
+  outcome     String?
+  nextAction  String?       @map("next_action")
+  nextDueDate DateTime?     @map("next_due_date")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  prospect Prospect? @relation(fields: [prospectId], references: [id])
+  user     User?     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, logDate])
+  @@index([tenantId, customerId])
+  @@map("follow_logs")
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  name        String
+  eventDate   DateTime  @map("event_date")
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  attendees EventAttendee[]
+
+  @@map("events")
+}
+
+model EventAttendee {
+  id         String           @id @default(uuid())
+  tenantId   String           @map("tenant_id")
+  eventId    String           @map("event_id")
+  customerId String?          @map("customer_id")
+  prospectId String?          @map("prospect_id")
+  status     AttendanceStatus @default(REGISTERED)
+  note       String?
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  event    Event     @relation(fields: [eventId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  prospect Prospect? @relation(fields: [prospectId], references: [id])
+
+  @@map("event_attendees")
+}
+
+model Referral {
+  id               String    @id @default(uuid())
+  tenantId         String    @map("tenant_id")
+  referrerCustomerId String  @map("referrer_customer_id")
+  referredCustomerId String  @map("referred_customer_id")
+  referralDate     DateTime  @map("referral_date")
+  note             String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  referrerCustomer Customer @relation("ReferrerCustomer", fields: [referrerCustomerId], references: [id])
+  referredCustomer Customer @relation("ReferredCustomer", fields: [referredCustomerId], references: [id])
+
+  @@map("referrals")
+}
+
+model KpiSnapshot {
+  id            String     @id @default(uuid())
+  tenantId      String     @map("tenant_id")
+  period        KpiPeriod
+  periodStart   DateTime   @map("period_start")
+  // Sales
+  revenueJpy    Int        @default(0) @map("revenue_jpy")
+  profitJpy     Int        @default(0) @map("profit_jpy")
+  expenseJpy    Int        @default(0) @map("expense_jpy")
+  isProfit      Boolean    @default(true) @map("is_profit")
+  // Customers
+  newCustomers  Int        @default(0) @map("new_customers")
+  handledToday  Int        @default(0) @map("handled_today")
+  repeatRate    Float      @default(0) @map("repeat_rate")       // 0.0 – 1.0
+  churnRisk     Int        @default(0) @map("churn_risk")         // dormant count
+  referralCount Int        @default(0) @map("referral_count")
+  // Weekly extras
+  cpa           Float?     @map("cpa")
+  cps           Float?     @map("cps")
+  cvr           Float?     @map("cvr")
+  // Monthly extras
+  ltvAvg        Float?     @map("ltv_avg")
+  maCps         Float?     @map("ma_cps")
+  subscriptionMrr Int?     @map("subscription_mrr")
+  newVsRepeat   Json?      @map("new_vs_repeat")   // {new: n, repeat: n}
+  productVolume Json?      @map("product_volume")  // {productId: count, ...}
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, period, periodStart])
+  @@index([tenantId, period, periodStart])
+  @@map("kpi_snapshots")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  PHASE 2 STUBS (tables exist, populated in Phase 2)
+// ─────────────────────────────────────────────────────────────
+
+model WebhookLog {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  source      String    // "utage" | "freee"
+  payload     Json
+  processed   Boolean   @default(false)
+  error       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("webhook_logs")
+}
+
+model Integration {
+  id           String          @id @default(uuid())
+  tenantId     String          @map("tenant_id")
+  type         IntegrationType
+  accessToken  String?         @map("access_token")
+  refreshToken String?         @map("refresh_token")
+  accountId    String?         @map("account_id")    // e.g. GA property ID, Meta ad account ID
+  lastSyncedAt DateTime?       @map("last_synced_at")
+  isEnabled    Boolean         @default(false) @map("is_enabled")
+  meta         Json            @default("{}") @map("meta")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, type])
+  @@map("integrations")
+}
+
+model MarketingFunnel {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  recordDate    DateTime  @map("record_date")
+  campaignLabel String?   @map("campaign_label")
+  // All manual entry in Phase 1; auto-pull from ClickFunnels/GA in Phase 2
+  atv           Float?    @map("atv")   // Average Transaction Value
+  epc           Float?    @map("epc")   // Earnings Per Click
+  cpc           Float?    @map("cpc")   // Cost Per Click
+  cpa           Float?    @map("cpa")   // Cost Per Acquisition
+  cps           Float?    @map("cps")   // Cost Per Sale
+  maCps         Float?    @map("ma_cps") // Max Allowable CPS (calculated: LTV × 0.60)
+  totalClicks   Int?      @map("total_clicks")
+  totalRevenue  Int?      @map("total_revenue")
+  totalAdSpend  Int?      @map("total_ad_spend")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, recordDate])
+  @@map("marketing_funnel")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ALWAYS PRESENT
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  userId    String?   @map("user_id")
+  action    String    // "CREATE" | "UPDATE" | "DELETE"
+  entity    String    // table name
+  entityId  String    @map("entity_id")
+  before    Json?     @map("before")
+  after     Json?     @map("after")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([tenantId, entity, entityId])
+  @@map("audit_logs")
+}

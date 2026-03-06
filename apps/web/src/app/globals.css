@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer utilities {
+  .profit-text { @apply text-green-600 font-semibold; }
+  .loss-text   { @apply text-red-600 font-semibold; }
+  .kpi-card    { @apply bg-white rounded-xl shadow-sm border border-gray-100 p-5; }
+}
