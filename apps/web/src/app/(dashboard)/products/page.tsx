@@ -3,21 +3,14 @@ import { useEffect, useState } from 'react'
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatYen } from '@/lib/utils'
-
-const CATEGORY_LABELS: Record<string, string> = {
-  LIST_ACQUISITION: 'リスト獲得',
-  INDIVIDUAL:       '個別面談',
-  SEMINAR:          'セミナー',
-  ONLINE_COURSE:    'オンライン教材',
-  SUBSCRIPTION:     'サブスク',
-}
-const BILLING_LABELS: Record<string, string> = {
-  ONE_TIME:           '一回払い',
-  RECURRING_MONTHLY:  '月次定期',
-  RECURRING_ANNUAL:   '年次定期',
-}
+import { useI18n } from '@/lib/i18n'
 
 export default function ProductsPage() {
+  const { t, locale } = useI18n()
+
+  const CATEGORY_LABELS: Record<string, string> = t.categories
+  const BILLING_LABELS: Record<string, string> = t.billingTypes
+
   const [products, setProducts] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
@@ -54,7 +47,7 @@ export default function ProductsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm('この商品を削除しますか？')) return
+    if (!confirm(t.products.confirmDelete)) return
     await api.products.delete(id)
     load()
   }
@@ -69,10 +62,10 @@ export default function ProductsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">商品管理</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t.products.title}</h2>
         <button onClick={openNew}
           className="flex items-center gap-2 bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-900">
-          <PlusCircle size={15} /> 商品追加
+          <PlusCircle size={15} /> {t.products.addProduct}
         </button>
       </div>
 
@@ -111,28 +104,28 @@ export default function ProductsPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4">{editing ? '商品を編集' : '商品を追加'}</h3>
+            <h3 className="text-lg font-bold mb-4">{editing ? t.products.editProduct : t.products.addProductTitle}</h3>
             <form onSubmit={save} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">商品名 *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.products.productName}</label>
                 <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">金額（円・税込） *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.products.price}</label>
                 <input required type="number" min="0" value={form.priceJpy}
                   onChange={(e) => setForm({ ...form, priceJpy: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">カテゴリ</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.products.category}</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
                   {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">課金タイプ</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.products.billingType}</label>
                 <select value={form.billingType} onChange={(e) => setForm({ ...form, billingType: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
                   {Object.entries(BILLING_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -142,16 +135,16 @@ export default function ProductsPage() {
                 <input type="checkbox" id="isActive" checked={form.isActive}
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                   className="rounded border-gray-300" />
-                <label htmlFor="isActive" className="text-xs text-gray-700">販売中</label>
+                <label htmlFor="isActive" className="text-xs text-gray-700">{t.products.onSale}</label>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="flex-1 border border-gray-300 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">
-                  キャンセル
+                  {t.common.cancel}
                 </button>
                 <button type="submit"
                   className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm hover:bg-slate-900">
-                  保存する
+                  {t.common.save}
                 </button>
               </div>
             </form>

@@ -4,18 +4,11 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard, Users, ShoppingCart, Package,
-  Settings, LogOut, AlertTriangle, Menu, X
+  Settings, LogOut, AlertTriangle, Menu, X, Globe
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
-
-const NAV = [
-  { href: '/',          label: 'ダッシュボード', icon: LayoutDashboard },
-  { href: '/customers', label: '顧客管理',       icon: Users },
-  { href: '/sales',     label: '売上入力',        icon: ShoppingCart },
-  { href: '/products',  label: '商品管理',        icon: Package },
-  { href: '/settings',  label: '設定',            icon: Settings },
-]
+import { useI18n } from '@/lib/i18n'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -23,6 +16,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
   const [overdueCount, setOverdueCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { t, locale, setLocale } = useI18n()
+
+  const NAV = [
+    { href: '/',          label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/customers', label: t.nav.customers, icon: Users },
+    { href: '/sales',     label: t.nav.sales,     icon: ShoppingCart },
+    { href: '/products',  label: t.nav.products,  icon: Package },
+    { href: '/settings',  label: t.nav.settings,  icon: Settings },
+  ]
 
   useEffect(() => {
     const token = localStorage.getItem('crm_access_token')
@@ -46,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-slate-700">
-        <h1 className="text-lg font-bold text-white tracking-tight">経営ダッシュボード</h1>
+        <h1 className="text-lg font-bold text-white tracking-tight">{t.common.appTitle}</h1>
         {user && <p className="text-xs text-slate-400 mt-0.5">{user.tenantName}</p>}
       </div>
 
@@ -83,14 +85,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{user?.email}</p>
-            <p className="text-xs text-slate-400">{user?.role === 'ADMIN' ? '管理者' : '閲覧者'}</p>
+            <p className="text-xs text-slate-400">{user?.role === 'ADMIN' ? t.nav.admin : t.nav.viewer}</p>
           </div>
         </div>
+        <button
+          onClick={() => setLocale(locale === 'ja' ? 'en' : 'ja')}
+          className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors w-full mb-2"
+        >
+          <Globe size={14} />
+          {locale === 'ja' ? 'English' : '日本語'}
+        </button>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors w-full"
         >
-          <LogOut size={14} /> ログアウト
+          <LogOut size={14} /> {t.nav.logout}
         </button>
       </div>
     </div>
@@ -120,10 +129,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setSidebarOpen(true)} className="text-gray-500">
             <Menu size={22} />
           </button>
-          <h1 className="text-base font-semibold text-gray-800">経営ダッシュボード</h1>
+          <h1 className="text-base font-semibold text-gray-800">{t.common.appTitle}</h1>
           {overdueCount > 0 && (
             <span className="ml-auto flex items-center gap-1 text-xs text-red-600 font-medium">
-              <AlertTriangle size={14} /> {overdueCount}件 フォロー期限超過
+              <AlertTriangle size={14} /> {overdueCount}{t.nav.overdueFollowUp}
             </span>
           )}
         </div>

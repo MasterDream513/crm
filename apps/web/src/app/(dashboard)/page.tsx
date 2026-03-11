@@ -10,36 +10,36 @@ import {
 } from 'recharts'
 import { api } from '@/lib/api'
 import { formatYen, formatPct } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
-// ── KPI metadata: label + Japanese description + action hint ──────────────
-const KPI_META: Record<string, { desc: string; hint: string }> = {
-  cpa:  { desc: '1人のお客様を獲得するために使った広告費', hint: '上がったら広告クリエイティブを見直しましょう' },
-  cps:  { desc: '1件の販売にかかった広告費合計', hint: 'ATVと比較して利益が出ているか確認しましょう' },
-  cvr:  { desc: 'セミナー参加者のうち成約した割合', hint: '下がったらセールストークや提案内容を改善しましょう' },
-  epc:  { desc: '1クリックあたりに生まれた収益', hint: 'CPCより高ければ広告は黒字。低ければ赤字です' },
-  cpc:  { desc: '1クリックあたりの広告費', hint: 'EPCと比較して収益性を判断してください' },
-  ltv:  { desc: '顧客1人が生涯にわたって支払う平均金額', hint: '上げるにはアップセルとリピート促進が有効です' },
-  maCps:{ desc: 'LTVを元に計算した顧客獲得の上限コスト', hint: 'CPAがこの数字を超えたら広告は赤字です' },
-}
-
-function KpiTooltip({ metaKey }: { metaKey: string }) {
-  const m = KPI_META[metaKey]
-  if (!m) return null
+function KpiTooltip({ meta }: { meta: { desc: string; hint: string } | undefined }) {
+  if (!meta) return null
   return (
     <div className="group relative inline-block ml-1">
       <span className="text-gray-400 cursor-help text-xs border border-gray-300 rounded-full w-4 h-4 inline-flex items-center justify-center">?</span>
       <div className="hidden group-hover:block absolute left-0 top-5 z-10 bg-gray-900 text-white text-xs rounded-lg p-3 w-64 shadow-xl">
-        <p className="font-medium mb-1">{m.desc}</p>
-        <p className="text-gray-300">👉 {m.hint}</p>
+        <p className="font-medium mb-1">{meta.desc}</p>
+        <p className="text-gray-300">{meta.hint}</p>
       </div>
     </div>
   )
 }
 
 export default function DashboardPage() {
+  const { t, locale } = useI18n()
   const [kpi, setKpi] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+
+  const KPI_META: Record<string, { desc: string; hint: string }> = {
+    cpa: t.kpiTooltips.cpa,
+    cps: t.kpiTooltips.cps,
+    cvr: t.kpiTooltips.cvr,
+    epc: t.kpiTooltips.epc,
+    cpc: t.kpiTooltips.cpc,
+    ltv: t.kpiTooltips.ltv,
+    maCps: t.kpiTooltips.maCps,
+  }
 
   async function load() {
     setLoading(true)
@@ -59,7 +59,7 @@ export default function DashboardPage() {
   if (loading && !kpi) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-400">
-        <RefreshCw className="animate-spin mr-2" size={18} /> 読み込み中...
+        <RefreshCw className="animate-spin mr-2" size={18} /> {t.common.loading}
       </div>
     )
   }
@@ -73,10 +73,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">今日の経営状況</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t.dashboard.todayStatus}</h2>
           {lastUpdated && (
             <p className="text-xs text-gray-400 mt-0.5">
-              最終更新: {lastUpdated.toLocaleTimeString('ja-JP')}
+              {t.dashboard.lastUpdated} {lastUpdated.toLocaleTimeString(locale === 'ja' ? 'ja-JP' : 'en-US')}
             </p>
           )}
         </div>
@@ -84,62 +84,62 @@ export default function DashboardPage() {
           onClick={load}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 transition-colors"
         >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> 更新
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {t.common.refresh}
         </button>
       </div>
 
       {/* ── Daily KPI (5 core metrics) ─────────────────────── */}
       <section>
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          毎日確認 — Today
+          {t.dashboard.dailyHeader}
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {/* 1. Revenue / Profit */}
           <div className={`kpi-card col-span-2 lg:col-span-1 border-l-4 ${d.isProfit ? 'border-green-500' : 'border-red-500'}`}>
-            <p className="text-xs text-gray-500 mb-1">本日 売上 / 損益</p>
+            <p className="text-xs text-gray-500 mb-1">{t.dashboard.todayRevenue}</p>
             <p className="text-2xl font-bold">{formatYen(d.revenueJpy ?? 0)}</p>
             <p className={`text-sm font-semibold mt-0.5 ${d.isProfit ? 'profit-text' : 'loss-text'}`}>
-              {d.isProfit ? '▲ 黒字' : '▼ 赤字'} {formatYen(Math.abs(d.profitJpy ?? 0))}
+              {d.isProfit ? t.dashboard.profitLabel : t.dashboard.lossLabel} {formatYen(Math.abs(d.profitJpy ?? 0))}
             </p>
-            <p className="text-xs text-gray-400 mt-1">経費: {formatYen(d.expenseJpy ?? 0)}</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.expense} {formatYen(d.expenseJpy ?? 0)}</p>
           </div>
 
           {/* 2. New customers */}
           <div className="kpi-card">
             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-              <Users size={13} /> 本日 新規顧客
+              <Users size={13} /> {t.dashboard.newCustomers}
             </div>
             <p className="text-3xl font-bold">{d.newCustomers ?? 0}</p>
-            <p className="text-xs text-gray-400 mt-1">名</p>
+            <p className="text-xs text-gray-400 mt-1">{t.common.unit_people}</p>
           </div>
 
           {/* 3. Existing handled */}
           <div className="kpi-card">
             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-              <UserCheck size={13} /> 本日 対応済み既存顧客
+              <UserCheck size={13} /> {t.dashboard.existingHandled}
             </div>
             <p className="text-3xl font-bold">{d.existingCustomersHandled ?? 0}</p>
-            <p className="text-xs text-gray-400 mt-1">名（フォローログより）</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.fromFollowLog}</p>
           </div>
 
           {/* 4. Repeat rate */}
           <div className="kpi-card">
             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-              <RefreshCw size={13} /> リピート率
+              <RefreshCw size={13} /> {t.dashboard.repeatRate}
             </div>
             <p className="text-3xl font-bold">{formatPct(d.repeatRate ?? 0)}</p>
-            <p className="text-xs text-gray-400 mt-1">2回以上購入した顧客の割合</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.repeatRateDesc}</p>
           </div>
 
           {/* 5. Churn risk */}
           <div className={`kpi-card border-l-4 ${(d.churnRiskCount ?? 0) > 0 ? 'border-amber-400' : 'border-gray-200'}`}>
             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-              <AlertTriangle size={13} /> 離脱リスク顧客
+              <AlertTriangle size={13} /> {t.dashboard.churnRisk}
             </div>
             <p className={`text-3xl font-bold ${(d.churnRiskCount ?? 0) > 0 ? 'text-amber-600' : ''}`}>
               {d.churnRiskCount ?? 0}
             </p>
-            <p className="text-xs text-gray-400 mt-1">90日以上未購入</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.churnRiskDesc}</p>
           </div>
         </div>
       </section>
@@ -147,18 +147,18 @@ export default function DashboardPage() {
       {/* ── Weekly KPI ─────────────────────────────────────── */}
       <section>
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          週次確認 — This Week
+          {t.dashboard.weeklyHeader}
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { key: 'cpa',  label: 'CPA 顧客獲得単価', value: w.cpa  ? formatYen(w.cpa)  : '未入力', unit: '' },
-            { key: 'cps',  label: 'CPS 販売あたりコスト', value: w.cps ? formatYen(w.cps) : '未入力', unit: '' },
-            { key: 'epc',  label: 'EPC クリックあたり収益', value: w.epc ? formatYen(w.epc) : '未入力', unit: '' },
-            { key: 'cpc',  label: 'CPC クリックあたり広告費', value: w.cpc ? formatYen(w.cpc) : '未入力', unit: '' },
+            { key: 'cpa',  label: t.dashboard.cpaLabel, value: w.cpa  ? formatYen(w.cpa)  : t.dashboard.notEntered, unit: '' },
+            { key: 'cps',  label: t.dashboard.cpsLabel, value: w.cps ? formatYen(w.cps) : t.dashboard.notEntered, unit: '' },
+            { key: 'epc',  label: t.dashboard.epcLabel, value: w.epc ? formatYen(w.epc) : t.dashboard.notEntered, unit: '' },
+            { key: 'cpc',  label: t.dashboard.cpcLabel, value: w.cpc ? formatYen(w.cpc) : t.dashboard.notEntered, unit: '' },
           ].map(({ key, label, value }) => (
             <div key={key} className="kpi-card">
               <div className="flex items-center text-xs text-gray-500 mb-1">
-                {label} <KpiTooltip metaKey={key} />
+                {label} <KpiTooltip meta={KPI_META[key]} />
               </div>
               <p className="text-xl font-bold">{value}</p>
             </div>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
         {w.productVolume && Object.keys(w.productVolume).length > 0 && (
           <div className="mt-3 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <BarChart3 size={15} /> 商品別販売数（今週）
+              <BarChart3 size={15} /> {t.dashboard.productVolumeWeek}
             </h4>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart
@@ -183,7 +183,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => [`${v}件`]} />
+                <Tooltip formatter={(v: number) => [`${v}${t.common.unit_items}`]} />
                 <Bar dataKey="count" fill="#475569" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -193,10 +193,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
           <div className="kpi-card">
             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-              <GitBranch size={13} /> 今週の紹介数
+              <GitBranch size={13} /> {t.dashboard.referralsThisWeek}
             </div>
             <p className="text-3xl font-bold">{w.referralCount ?? 0}</p>
-            <p className="text-xs text-gray-400 mt-1">件</p>
+            <p className="text-xs text-gray-400 mt-1">{t.common.unit_items}</p>
           </div>
         </div>
       </section>
@@ -204,37 +204,37 @@ export default function DashboardPage() {
       {/* ── Monthly KPI ────────────────────────────────────── */}
       <section>
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          月次確認 — This Month
+          {t.dashboard.monthlyHeader}
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* LTV */}
           <div className="kpi-card">
             <div className="flex items-center text-xs text-gray-500 mb-1">
-              LTV 顧客生涯価値（平均）<KpiTooltip metaKey="ltv" />
+              {t.dashboard.ltvLabel}<KpiTooltip meta={KPI_META['ltv']} />
             </div>
             <p className="text-xl font-bold">
-              {m.ltvAvg ? formatYen(Math.round(m.ltvAvg)) : '-- (データ蓄積中)'}
+              {m.ltvAvg ? formatYen(Math.round(m.ltvAvg)) : t.dashboard.dataAccumulating}
             </p>
-            <p className="text-xs text-gray-400 mt-1">累計購入額の平均</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.ltvDesc}</p>
           </div>
 
           {/* MA-CPS */}
           <div className="kpi-card">
             <div className="flex items-center text-xs text-gray-500 mb-1">
-              MA-CPS 最大許容獲得費用<KpiTooltip metaKey="maCps" />
+              {t.dashboard.maCpsLabel}<KpiTooltip meta={KPI_META['maCps']} />
             </div>
             <p className="text-xl font-bold">
-              {m.maCps ? formatYen(Math.round(m.maCps)) : '-- (データ蓄積中)'}
+              {m.maCps ? formatYen(Math.round(m.maCps)) : t.dashboard.dataAccumulating}
             </p>
-            <p className="text-xs text-gray-400 mt-1">LTV × 60%</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.maCpsFormula}</p>
           </div>
 
           {/* Expense vs profit */}
           <div className="kpi-card">
-            <p className="text-xs text-gray-500 mb-1">今月 収支バランス</p>
+            <p className="text-xs text-gray-500 mb-1">{t.dashboard.balanceThisMonth}</p>
             <p className="text-xl font-bold">{formatYen(m.revenueJpy ?? 0)}</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-green-600">売上</span>
+              <span className="text-xs text-green-600">{t.dashboard.revenue}</span>
               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-green-500 rounded-full"
@@ -245,26 +245,26 @@ export default function DashboardPage() {
                   }}
                 />
               </div>
-              <span className="text-xs text-red-500">経費 {formatYen(m.expenseJpy ?? 0)}</span>
+              <span className="text-xs text-red-500">{t.dashboard.expense} {formatYen(m.expenseJpy ?? 0)}</span>
             </div>
           </div>
 
           {/* Subscription MRR */}
           <div className="kpi-card">
-            <p className="text-xs text-gray-500 mb-1">サブスク MRR</p>
+            <p className="text-xs text-gray-500 mb-1">{t.dashboard.subscriptionMrr}</p>
             <p className="text-xl font-bold">{formatYen(m.subscriptionMrr ?? 0)}</p>
-            <p className="text-xs text-gray-400 mt-1">定期売上（今月）</p>
+            <p className="text-xs text-gray-400 mt-1">{t.dashboard.recurringRevenue}</p>
           </div>
         </div>
 
         {/* New vs Repeat */}
         <div className="mt-3 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">新規 vs リピート（今月）</h4>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">{t.dashboard.newVsRepeat}</h4>
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>新規 {m.newCustomers ?? 0}名</span>
-                <span>リピート {m.repeatCustomers ?? 0}名</span>
+                <span>{t.dashboard.newLabel} {m.newCustomers ?? 0}{t.common.unit_people}</span>
+                <span>{t.dashboard.repeatLabel} {m.repeatCustomers ?? 0}{t.common.unit_people}</span>
               </div>
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
                 {(m.totalCustomers ?? 0) > 0 && (

@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react'
 import { PlusCircle, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatYen } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 export default function SalesPage() {
+  const { t, locale } = useI18n()
   const [products, setProducts] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [summary, setSummary] = useState<{ daily: any; weekly: any; monthly: any }>({
@@ -62,12 +64,12 @@ export default function SalesPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <h2 className="text-xl font-bold text-gray-900">売上入力 & 集計</h2>
+      <h2 className="text-xl font-bold text-gray-900">{t.sales.title}</h2>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Entry form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-sm font-bold text-gray-800 mb-4">売上を記録する</h3>
+          <h3 className="text-sm font-bold text-gray-800 mb-4">{t.sales.recordSale}</h3>
 
           {/* Mode toggle */}
           <div className="flex rounded-lg border border-gray-200 mb-4 p-0.5 bg-gray-50">
@@ -79,7 +81,7 @@ export default function SalesPage() {
                   mode === m ? 'bg-white shadow text-gray-900' : 'text-gray-500'
                 }`}
               >
-                {m === 'product' ? '商品から選ぶ' : '金額を直接入力（割引・セット）'}
+                {m === 'product' ? t.sales.selectFromProduct : t.sales.directAmount}
               </button>
             ))}
           </div>
@@ -87,14 +89,14 @@ export default function SalesPage() {
           <form onSubmit={submit} className="space-y-4">
             {/* Customer select */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">顧客 *</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t.sales.customer}</label>
               <select
                 required
                 value={form.customerId}
                 onChange={(e) => setForm({ ...form, customerId: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
               >
-                <option value="">顧客を選択...</option>
+                <option value="">{t.sales.selectCustomer}</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -104,7 +106,7 @@ export default function SalesPage() {
             {/* Product or amount */}
             {mode === 'product' ? (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">商品 *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.sales.product}</label>
                 <select
                   required
                   value={form.productId}
@@ -118,7 +120,7 @@ export default function SalesPage() {
                   }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 >
-                  <option value="">商品を選択...</option>
+                  <option value="">{t.sales.selectProduct}</option>
                   {products.filter(p => p.isActive).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} — {formatYen(p.priceJpy)}
@@ -127,13 +129,13 @@ export default function SalesPage() {
                 </select>
                 {form.productId && (
                   <p className="text-xs text-gray-400 mt-1">
-                    金額: {formatYen(products.find(p => p.id === form.productId)?.priceJpy ?? 0)}
+                    {t.sales.amount} {formatYen(products.find(p => p.id === form.productId)?.priceJpy ?? 0)}
                   </p>
                 )}
               </div>
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">金額（円・税込） *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.sales.amountLabel}</label>
                 <input
                   type="number"
                   required
@@ -141,7 +143,7 @@ export default function SalesPage() {
                   value={form.amountJpy}
                   onChange={(e) => setForm({ ...form, amountJpy: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                  placeholder="例: 30000"
+                  placeholder={t.sales.amountPlaceholder}
                 />
               </div>
             )}
@@ -149,21 +151,21 @@ export default function SalesPage() {
             {/* Subscription status (if recurring) */}
             {form.billingType === 'RECURRING_MONTHLY' && (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">サブスク状態</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{t.sales.subscriptionStatus}</label>
                 <select
                   value={form.subscriptionStatus}
                   onChange={(e) => setForm({ ...form, subscriptionStatus: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 >
-                  <option value="ACTIVE">継続中</option>
-                  <option value="PAUSED">一時停止</option>
-                  <option value="CANCELLED">解約</option>
+                  <option value="ACTIVE">{t.sales.active}</option>
+                  <option value="PAUSED">{t.sales.paused}</option>
+                  <option value="CANCELLED">{t.sales.cancelled}</option>
                 </select>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">取引日時</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t.sales.transactionDate}</label>
               <input
                 type="datetime-local"
                 value={form.transactionDate}
@@ -173,13 +175,13 @@ export default function SalesPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">メモ</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t.sales.memo}</label>
               <input
                 type="text"
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                placeholder="割引理由・備考など"
+                placeholder={t.sales.memoPlaceholder}
               />
             </div>
 
@@ -187,11 +189,11 @@ export default function SalesPage() {
               type="submit"
               className="w-full bg-slate-800 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-slate-900 transition-colors"
             >
-              売上を記録する
+              {t.sales.submitSale}
             </button>
 
             {success && (
-              <p className="text-center text-sm text-green-600 font-medium">✅ 記録しました</p>
+              <p className="text-center text-sm text-green-600 font-medium">{t.sales.recorded}</p>
             )}
           </form>
         </div>
@@ -199,17 +201,17 @@ export default function SalesPage() {
         {/* Summary panel */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-gray-800">集計</h3>
+            <h3 className="text-sm font-bold text-gray-800">{t.sales.summary}</h3>
             <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-50 text-xs">
-              {(['daily', 'weekly', 'monthly'] as const).map((t) => (
+              {(['daily', 'weekly', 'monthly'] as const).map((tab) => (
                 <button
-                  key={t}
-                  onClick={() => setActiveTab(t)}
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
                   className={`px-3 py-1 rounded-md font-medium transition-all ${
-                    activeTab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500'
+                    activeTab === tab ? 'bg-white shadow text-gray-900' : 'text-gray-500'
                   }`}
                 >
-                  {t === 'daily' ? '今日' : t === 'weekly' ? '今週' : '今月'}
+                  {tab === 'daily' ? t.sales.today : tab === 'weekly' ? t.sales.thisWeek : t.sales.thisMonth}
                 </button>
               ))}
             </div>
@@ -218,28 +220,28 @@ export default function SalesPage() {
           {s && (
             <div className="space-y-4">
               <div className={`rounded-lg p-4 ${s.isProfit ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                <p className="text-xs text-gray-500 mb-1">売上</p>
+                <p className="text-xs text-gray-500 mb-1">{t.sales.revenueLabel}</p>
                 <p className="text-3xl font-bold">{formatYen(s.revenueJpy)}</p>
                 <div className="flex items-center gap-1 mt-1">
                   {s.isProfit
                     ? <TrendingUp size={14} className="text-green-600" />
                     : <TrendingDown size={14} className="text-red-600" />}
                   <span className={`text-sm font-semibold ${s.isProfit ? 'text-green-600' : 'text-red-600'}`}>
-                    {s.isProfit ? '黒字' : '赤字'} {formatYen(Math.abs(s.profitJpy))}
+                    {s.isProfit ? t.sales.profitLabel : t.sales.lossLabel} {formatYen(Math.abs(s.profitJpy))}
                   </span>
                   {s.vsLastPeriod !== null && s.vsLastPeriod !== undefined && (
                     <span className="text-xs text-gray-400 ml-2">
-                      前期比 {s.vsLastPeriod >= 0 ? '+' : ''}{s.vsLastPeriod.toFixed(1)}%
+                      {t.sales.vsLastPeriod} {s.vsLastPeriod >= 0 ? '+' : ''}{s.vsLastPeriod.toFixed(1)}%
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">経費: {formatYen(s.expenseJpy)}</p>
+                <p className="text-xs text-gray-400 mt-1">{t.sales.expenseLabel} {formatYen(s.expenseJpy)}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-400">取引件数</p>
-                  <p className="text-xl font-bold">{s.transactionCount}件</p>
+                  <p className="text-xs text-gray-400">{t.sales.transactionCount}</p>
+                  <p className="text-xl font-bold">{s.transactionCount}{t.common.unit_items}</p>
                 </div>
               </div>
 
@@ -247,7 +249,7 @@ export default function SalesPage() {
               {s.productVolume && Object.keys(s.productVolume).length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
-                    <BarChart3 size={12} /> 商品別
+                    <BarChart3 size={12} /> {t.sales.byProduct}
                   </p>
                   <div className="space-y-1.5">
                     {Object.values(s.productVolume)
@@ -256,7 +258,7 @@ export default function SalesPage() {
                       .map((v: any) => (
                         <div key={v.name} className="flex items-center justify-between text-xs">
                           <span className="text-gray-600 truncate max-w-[60%]">{v.name}</span>
-                          <span className="font-medium">{v.count}件 / {formatYen(v.revenue)}</span>
+                          <span className="font-medium">{v.count}{t.common.unit_items} / {formatYen(v.revenue)}</span>
                         </div>
                       ))}
                   </div>
