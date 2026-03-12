@@ -6,12 +6,6 @@ import { calcRepeatRate, calcMaCps, isProfitable } from '../../lib/kpi-calc.js'
 export const kpiRoutes = new Hono()
 kpiRoutes.use('*', authMiddleware)
 
-/**
- * GET /api/v1/kpi/dashboard
- * Returns all KPI panels (daily, weekly, monthly) in a single request.
- * Data is served from kpi_snapshots where available (< 3s load guarantee).
- * Falls back to live calculation if snapshot is stale.
- */
 kpiRoutes.get('/dashboard', async (c) => {
   const { tenantId } = c.get('user')
   const now = new Date()
@@ -46,7 +40,6 @@ async function getDailyKpi(tenantId: string, now: Date, churnDays: number) {
     prisma.customer.count({
       where: { tenantId, deletedAt: null, createdAt: { gte: todayStart } },
     }),
-    // A案: auto-count follow logs with a customer (not prospect) entered today
     prisma.followLog.count({
       where: {
         tenantId,
@@ -71,20 +64,8 @@ async function getDailyKpi(tenantId: string, now: Date, churnDays: number) {
   const expenseJpy = expenses.reduce((s, e) => s + e.amountJpy, 0)
   const profitJpy = revenueJpy - expenseJpy
 
-  // Repeat rate: customers with 2+ transactions / total customers
-  const [totalCustomers, repeatCustomers] = await Promise.all([
-    prisma.customer.count({ where: { tenantId, deletedAt: null } }),
-    prisma.customer.count({
-      where: {
-        tenantId,
-        deletedAt: null,
-        transactions: { some: { deletedAt: null } },
-        AND: [{ transactions: { some: { deletedAt: null } } }],
-      },
-    }),
-  ])
+  const totalCustomers = await prisma.customer.count({ where: { tenantId, deletedAt: null } })
 
-  // Count customers with 2+ transactions (repeat customers)
   const repeatResult = await prisma.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(*)::bigint as count FROM (
       SELECT customer_id FROM transactions
@@ -124,22 +105,26 @@ async function getWeeklyKpi(tenantId: string, now: Date) {
     }),
   ])
 
-  // Per-product volume
-  const productVolume: Record<string, { name: string; count: number; revenue: number }> = {}
+  // Per-product volume — use field names matching UI types
+  const productVolume: Record<string, { productName: string; count: number; revenueJpy: number }> = {}
   for (const t of transactions) {
     if (!t.product) continue
     const key = t.productId!
-    if (!productVolume[key]) productVolume[key] = { name: t.product.name, count: 0, revenue: 0 }
+    if (!productVolume[key]) productVolume[key] = { productName: t.product.name, count: 0, revenueJpy: 0 }
     productVolume[key].count += 1
-    productVolume[key].revenue += t.amountJpy
+    productVolume[key].revenueJpy += t.amountJpy
   }
+
+  // Compute ATV (Average Transaction Value) from weekly transactions
+  const totalRevenue = transactions.reduce((s, t) => s + t.amountJpy, 0)
+  const atv = transactions.length > 0 ? Math.round(totalRevenue / transactions.length) : (latestFunnel?.atv ?? null)
 
   return {
     cpa: latestFunnel?.cpa ?? null,
     cps: latestFunnel?.cps ?? null,
-    cvr: latestFunnel?.atv ? null : null, // manual entry or computed from events
     epc: latestFunnel?.epc ?? null,
     cpc: latestFunnel?.cpc ?? null,
+    atv,
     referralCount: referralStats,
     productVolume,
     periodStart: weekStart.toISOString(),
@@ -149,13 +134,7 @@ async function getWeeklyKpi(tenantId: string, now: Date) {
 async function getMonthlyKpi(tenantId: string, now: Date, marginRate: number) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const [
-    transactions,
-    expenses,
-    newCustomers,
-    allCustomers,
-    subscriptionCustomers,
-  ] = await Promise.all([
+  const [transactions, expenses, newCustomers, allCustomers] = await Promise.all([
     prisma.transaction.findMany({
       where: { tenantId, deletedAt: null, transactionDate: { gte: monthStart } },
     }),
@@ -164,16 +143,6 @@ async function getMonthlyKpi(tenantId: string, now: Date, marginRate: number) {
     }),
     prisma.customer.count({ where: { tenantId, deletedAt: null, createdAt: { gte: monthStart } } }),
     prisma.customer.count({ where: { tenantId, deletedAt: null } }),
-    // Active subscriptions (The Leaders College)
-    prisma.transaction.count({
-      where: {
-        tenantId,
-        deletedAt: null,
-        billingType: 'RECURRING_MONTHLY',
-        subscriptionStatus: 'ACTIVE',
-        transactionDate: { gte: monthStart },
-      },
-    }),
   ])
 
   const revenueJpy = transactions.reduce((s, t) => s + t.amountJpy, 0)
@@ -182,7 +151,6 @@ async function getMonthlyKpi(tenantId: string, now: Date, marginRate: number) {
     .filter((t) => t.billingType === 'RECURRING_MONTHLY')
     .reduce((s, t) => s + t.amountJpy, 0)
 
-  // LTV proxy: average cumulative spend across all customers
   const ltvAgg = await prisma.customer.aggregate({
     where: { tenantId, deletedAt: null },
     _avg: { cumulativeSpend: true },

@@ -5,6 +5,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { authRoutes } from './routes/v1/auth.js'
 import { customerRoutes } from './routes/v1/customers.js'
+import { prospectRoutes } from './routes/v1/prospects.js'
 import { transactionRoutes } from './routes/v1/transactions.js'
 import { productRoutes } from './routes/v1/products.js'
 import { expenseRoutes } from './routes/v1/expenses.js'
@@ -23,9 +24,9 @@ app.use('*', logger())
 app.use(
   '*',
   cors({
-    origin: process.env.NEXT_PUBLIC_API_URL
-      ? [process.env.NEXT_PUBLIC_API_URL, 'http://localhost:3000']
-      : 'http://localhost:3000',
+    origin: process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',')
+      : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:8080'],
     credentials: true,
   })
 )
@@ -37,6 +38,7 @@ app.get('/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString() })
 const v1 = new Hono()
 v1.route('/auth', authRoutes)
 v1.route('/customers', customerRoutes)
+v1.route('/prospects', prospectRoutes)
 v1.route('/transactions', transactionRoutes)
 v1.route('/products', productRoutes)
 v1.route('/expenses', expenseRoutes)
