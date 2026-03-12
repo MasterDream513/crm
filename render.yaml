@@ -17,7 +17,5 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
-      - key: API_PORT
-        value: "10000"
     healthCheckPath: /health
     autoDeploy: true

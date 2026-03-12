@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/api & npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=packages/db && npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build": "npm run db:generate && npm run build --workspace=apps/api && npm run build --workspace=apps/web",
     "test": "npm run test --workspaces --if-present",
     "db:generate": "npm run generate --workspace=packages/db",
     "db:migrate": "npm run migrate --workspace=packages/db",
