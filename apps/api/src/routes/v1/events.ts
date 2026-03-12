@@ -30,6 +30,21 @@ eventRoutes.post('/', zValidator('json', z.object({
   return c.json(event, 201)
 })
 
+// List attendees for an event
+eventRoutes.get('/:eventId/attendees', async (c) => {
+  const { tenantId } = c.get('user')
+  const eventId = c.req.param('eventId')
+  const attendees = await prisma.eventAttendee.findMany({
+    where: { eventId, tenantId },
+    include: {
+      customer: { select: { id: true, name: true } },
+      prospect: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+  return c.json(attendees)
+})
+
 // Mark attendance
 eventRoutes.patch('/:eventId/attendees/:attendeeId', zValidator('json', z.object({
   status: z.enum(['REGISTERED', 'ATTENDED', 'NO_SHOW']),

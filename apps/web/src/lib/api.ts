@@ -101,6 +101,7 @@ export const api = {
   },
   settings: {
     get: () => GET<Record<string, unknown>>('/api/v1/settings'),
+    update: (data: Record<string, unknown>) => PATCH<Record<string, unknown>>('/api/v1/settings', data),
   },
   integrations: {
     list: () => GET<{ id: string; type: string; enabled: boolean; accountId?: string }[]>('/api/v1/integrations'),

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, Package, TrendingUp, Settings, LogOut, Globe, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, Package, TrendingUp, Settings, LogOut, Globe, Wallet, CalendarDays } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,6 +13,7 @@ const navItems = [
   { key: 'sales' as const, path: '/sales', icon: Receipt },
   { key: 'products' as const, path: '/products', icon: Package },
   { key: 'expense' as const, path: '/expenses', icon: Wallet },
+  { key: 'events' as const, path: '/events', icon: CalendarDays },
   { key: 'marketing' as const, path: '/marketing', icon: TrendingUp },
   { key: 'settings' as const, path: '/settings', icon: Settings },
 ];

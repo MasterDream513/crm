@@ -112,6 +112,9 @@ export interface DashboardKpi {
     cpc?: number | null;
     atv?: number | null;
     referralCount: number;
+    conversionRate?: number | null;
+    convertedCount?: number;
+    totalProspects?: number;
     productVolume: Record<string, { productName: string; count: number; revenueJpy: number }>;
   };
   monthly: {
@@ -122,6 +125,8 @@ export interface DashboardKpi {
     ltvAvg: number;
     maCps: number;
     subscriptionMrr: number;
+    subscriptionMembers?: number;
+    subscriptionChangeRate?: number | null;
     newCustomers: number;
     repeatCustomers: number;
     totalCustomers: number;

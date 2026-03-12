@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useLocale } from '@/contexts/LocaleContext';
-import { formatYen } from '@/lib/format';
 import { api } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
-import { Settings, Shield, Link2, Star } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Settings, Link2, Star, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 const rankTiers = [
   { rank: 'RANK_1', label: '無料会員', threshold: '¥0', color: 'hsl(var(--rank-1))' },
@@ -23,6 +24,9 @@ const integrationDisplayMap: Record<string, { name: string; desc: string }> = {
 
 const SettingsPage = () => {
   const { t } = useLocale();
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ['settings'],
@@ -33,6 +37,43 @@ const SettingsPage = () => {
     queryKey: ['integrations'],
     queryFn: () => api.integrations.list(),
   });
+
+  const [form, setForm] = useState({
+    churnThresholdDays: 90,
+    maCpsMarginRate: 60,
+    currency: 'JPY',
+    timezone: 'Asia/Tokyo',
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setForm({
+        churnThresholdDays: (settings.churnThresholdDays as number) ?? 90,
+        maCpsMarginRate: ((settings.maCpsMarginRate as number) ?? 0.60) * 100,
+        currency: (settings.currency as string) ?? 'JPY',
+        timezone: (settings.timezone as string) ?? 'Asia/Tokyo',
+      });
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.settings.update({
+        churnThresholdDays: form.churnThresholdDays,
+        maCpsMarginRate: form.maCpsMarginRate / 100,
+        currency: form.currency,
+        timezone: form.timezone,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success('設定を保存しました');
+      setEditing(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '保存に失敗しました');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const isLoading = settingsLoading || integrationsLoading;
 
@@ -47,13 +88,6 @@ const SettingsPage = () => {
     );
   }
 
-  const dormantDays = `${(settings?.churnThresholdDays as number) ?? 90}日`;
-  const marginRate = (settings?.maCpsMarginRate as number) ?? 0.60;
-  const profitMargin = `${marginRate * 100}%`;
-  const maCpsFormula = `LTV × ${marginRate * 100}%`;
-  const currency = (settings?.currency as string) ?? 'JPY';
-  const timezone = (settings?.timezone as string) ?? 'Asia/Tokyo';
-
   const integrationItems = (integrations ?? []).map((integ) => {
     const display = integrationDisplayMap[integ.type] ?? { name: integ.type, desc: '' };
     return { ...display, enabled: integ.enabled };
@@ -61,7 +95,34 @@ const SettingsPage = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <h1 className="text-2xl font-bold text-foreground">{t('settings')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">{t('settings')}</h1>
+        {!editing ? (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+          >
+            {t('edit')}
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setEditing(false)}
+              className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? '保存中...' : t('save')}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* System Settings */}
       <section className="space-y-3">
@@ -70,18 +131,54 @@ const SettingsPage = () => {
           {t('systemSettings')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {[
-            { label: t('dormantDays'), value: dormantDays },
-            { label: t('profitMargin'), value: profitMargin },
-            { label: 'MA-CPS計算式', value: maCpsFormula },
-            { label: t('currency'), value: currency },
-            { label: t('timezone'), value: timezone },
-          ].map((item) => (
-            <div key={item.label} className="rounded-xl border bg-card p-4 shadow-sm">
-              <p className="text-xs text-muted-foreground">{item.label}</p>
-              <p className="text-lg font-semibold text-card-foreground mt-1">{item.value}</p>
-            </div>
-          ))}
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">{t('dormantDays')}</p>
+            {editing ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={form.churnThresholdDays}
+                  onChange={(e) => setForm({ ...form, churnThresholdDays: parseInt(e.target.value) || 90 })}
+                  min={1}
+                  max={365}
+                  className="w-full rounded-lg border bg-background px-3 py-1.5 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-sm text-muted-foreground">日</span>
+              </div>
+            ) : (
+              <p className="text-lg font-semibold text-card-foreground">{form.churnThresholdDays}日</p>
+            )}
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">{t('profitMargin')}</p>
+            {editing ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={form.maCpsMarginRate}
+                  onChange={(e) => setForm({ ...form, maCpsMarginRate: parseInt(e.target.value) || 60 })}
+                  min={1}
+                  max={100}
+                  className="w-full rounded-lg border bg-background px-3 py-1.5 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-lg font-semibold">%</span>
+              </div>
+            ) : (
+              <p className="text-lg font-semibold text-card-foreground">{form.maCpsMarginRate}%</p>
+            )}
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">MA-CPS計算式</p>
+            <p className="text-lg font-semibold text-card-foreground">LTV × {form.maCpsMarginRate}%</p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">{t('currency')}</p>
+            <p className="text-lg font-semibold text-card-foreground">{form.currency}</p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">{t('timezone')}</p>
+            <p className="text-lg font-semibold text-card-foreground">{form.timezone}</p>
+          </div>
         </div>
       </section>
 

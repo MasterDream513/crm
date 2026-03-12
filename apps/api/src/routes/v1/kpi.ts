@@ -93,7 +93,7 @@ async function getWeeklyKpi(tenantId: string, now: Date) {
   weekStart.setDate(now.getDate() - 6)
   weekStart.setHours(0, 0, 0, 0)
 
-  const [transactions, referralStats, latestFunnel] = await Promise.all([
+  const [transactions, referralStats, latestFunnel, totalProspects, convertedProspects] = await Promise.all([
     prisma.transaction.findMany({
       where: { tenantId, deletedAt: null, transactionDate: { gte: weekStart } },
       include: { product: { select: { id: true, name: true } } },
@@ -103,6 +103,8 @@ async function getWeeklyKpi(tenantId: string, now: Date) {
       where: { tenantId, recordDate: { gte: weekStart } },
       orderBy: { recordDate: 'desc' },
     }),
+    prisma.prospect.count({ where: { tenantId, deletedAt: null } }),
+    prisma.prospect.count({ where: { tenantId, stage: 'CLOSED_WON' } }),
   ])
 
   // Per-product volume — use field names matching UI types
@@ -126,6 +128,9 @@ async function getWeeklyKpi(tenantId: string, now: Date) {
     cpc: latestFunnel?.cpc ?? null,
     atv,
     referralCount: referralStats,
+    conversionRate: totalProspects > 0 ? Math.round((convertedProspects / totalProspects) * 1000) / 10 : null,
+    convertedCount: convertedProspects,
+    totalProspects,
     productVolume,
     periodStart: weekStart.toISOString(),
   }
@@ -147,9 +152,22 @@ async function getMonthlyKpi(tenantId: string, now: Date, marginRate: number) {
 
   const revenueJpy = transactions.reduce((s, t) => s + t.amountJpy, 0)
   const expenseJpy = expenses.reduce((s, e) => s + e.amountJpy, 0)
-  const subscriptionMrr = transactions
-    .filter((t) => t.billingType === 'RECURRING_MONTHLY')
-    .reduce((s, t) => s + t.amountJpy, 0)
+  const subscriptionTxns = transactions.filter((t) => t.billingType === 'RECURRING_MONTHLY')
+  const subscriptionMrr = subscriptionTxns.reduce((s, t) => s + t.amountJpy, 0)
+
+  // Subscription member count: unique customers with active recurring transactions
+  const subscriptionMemberIds = new Set(subscriptionTxns.map((t) => t.customerId).filter(Boolean))
+  const subscriptionMembers = subscriptionMemberIds.size
+
+  // Previous month subscription count for change rate
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+  const prevSubTxns = await prisma.transaction.findMany({
+    where: { tenantId, deletedAt: null, billingType: 'RECURRING_MONTHLY', transactionDate: { gte: prevMonthStart, lte: prevMonthEnd } },
+    select: { customerId: true },
+  })
+  const prevSubMembers = new Set(prevSubTxns.map((t) => t.customerId).filter(Boolean)).size
+  const subscriptionChangeRate = prevSubMembers > 0 ? Math.round(((subscriptionMembers - prevSubMembers) / prevSubMembers) * 1000) / 10 : null
 
   const ltvAgg = await prisma.customer.aggregate({
     where: { tenantId, deletedAt: null },
@@ -175,6 +193,8 @@ async function getMonthlyKpi(tenantId: string, now: Date, marginRate: number) {
     ltvAvg,
     maCps,
     subscriptionMrr,
+    subscriptionMembers,
+    subscriptionChangeRate,
     newCustomers,
     repeatCustomers: repeatCount,
     totalCustomers: allCustomers,

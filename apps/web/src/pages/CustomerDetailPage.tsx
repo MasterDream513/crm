@@ -9,9 +9,10 @@ import type { CustomerRank, FollowLogType } from '@/types';
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, TrendingUp,
   AlertTriangle, Star, Loader2, Plus, Clock, MessageSquare,
-  PhoneCall, Video, FileText, MoreHorizontal,
+  PhoneCall, Video, FileText, MoreHorizontal, Gift,
 } from 'lucide-react';
 import AddFollowLogModal from '@/components/modals/AddFollowLogModal';
+import AddReferralModal from '@/components/modals/AddReferralModal';
 
 const rankConfig: Record<CustomerRank, { label: string; color: string; level: number }> = {
   RANK_1: { label: '無料会員', color: 'hsl(var(--rank-1))', level: 1 },
@@ -46,6 +47,7 @@ const CustomerDetailPage = () => {
   const { t } = useLocale();
   const queryClient = useQueryClient();
   const [followModalOpen, setFollowModalOpen] = useState(false);
+  const [referralModalOpen, setReferralModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'purchases' | 'follows'>('purchases');
 
   const { data: customer, isLoading } = useQuery({
@@ -126,12 +128,20 @@ const CustomerDetailPage = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setFollowModalOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
-        >
-          <Plus className="h-4 w-4" /> {t('addFollow')}
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => setReferralModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            <Gift className="h-4 w-4" /> 紹介記録
+          </button>
+          <button
+            onClick={() => setFollowModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            <Plus className="h-4 w-4" /> {t('addFollow')}
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -298,6 +308,29 @@ const CustomerDetailPage = () => {
             setFollowModalOpen(false);
           } catch (err) {
             toast.error(err instanceof Error ? err.message : '追加に失敗しました');
+          }
+        }}
+      />
+
+      {/* Referral Modal */}
+      <AddReferralModal
+        open={referralModalOpen}
+        onClose={() => setReferralModalOpen(false)}
+        referrerCustomerId={id!}
+        referrerName={customer.name}
+        onSubmit={async (data) => {
+          try {
+            await api.referrals.create({
+              referrerCustomerId: id,
+              referredCustomerId: data.referredCustomerId,
+              referralDate: new Date(data.referralDate).toISOString(),
+              note: data.note || undefined,
+            });
+            await queryClient.invalidateQueries({ queryKey: ['customer', id] });
+            toast.success('紹介を記録しました');
+            setReferralModalOpen(false);
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : '記録に失敗しました');
           }
         }}
       />
