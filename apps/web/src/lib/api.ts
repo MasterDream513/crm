@@ -79,6 +79,7 @@ export const api = {
   expenses: {
     list: (params?: Record<string, string>) => GET<unknown[]>('/api/v1/expenses', params),
     create: (data: Record<string, unknown>) => POST<unknown>('/api/v1/expenses', data),
+    delete: (id: string) => DELETE<{ ok: boolean }>(`/api/v1/expenses/${id}`),
   },
   followLogs: {
     create: (data: Record<string, unknown>) => POST<import('@/types').FollowLog>('/api/v1/follow-logs', data),

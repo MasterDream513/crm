@@ -11,6 +11,7 @@ const pageTitles: Record<string, { ja: string; en: string }> = {
   '/customers': { ja: '顧客管理', en: 'Customers' },
   '/sales': { ja: '売上入力', en: 'Sales' },
   '/products': { ja: '商品管理', en: 'Products' },
+  '/expenses': { ja: '経費', en: 'Expenses' },
   '/marketing': { ja: 'マーケティング', en: 'Marketing' },
   '/settings': { ja: '設定', en: 'Settings' },
 };

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -28,6 +29,7 @@ const stageConfig: Record<ProspectStage, { label: string; color: string }> = {
 
 const CustomersPage = () => {
   const { t } = useLocale();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'customers' | 'prospects'>('customers');
   const [search, setSearch] = useState('');
@@ -154,7 +156,10 @@ const CustomersPage = () => {
                       <tr key={c.id} className={`border-b last:border-0 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/20'}`}>
                         <td className="px-4 py-3">
                           <div>
-                            <span className="font-medium text-foreground cursor-pointer hover:text-primary transition-colors">{c.name}</span>
+                            <span
+                              onClick={() => navigate(`/customers/${c.id}`)}
+                              className="font-medium text-foreground cursor-pointer hover:text-primary hover:underline transition-colors"
+                            >{c.name}</span>
                             {c.email && <p className="text-xs text-muted-foreground">{c.email}</p>}
                           </div>
                         </td>
