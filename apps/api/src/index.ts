@@ -54,6 +54,6 @@ v1.route('/integrations', integrationsRoutes)
 app.route('/api/v1', v1)
 
 // ── Start ───────────────────────────────────────────────────
-const port = Number(process.env.API_PORT ?? 3001)
+const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001)
 console.log(`🚀 API running on http://localhost:${port}`)
 serve({ fetch: app.fetch, port })
