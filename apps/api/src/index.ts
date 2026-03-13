@@ -33,13 +33,51 @@ app.use(
 
 // ── Health ──────────────────────────────────────────────────
 app.get('/health', async (c) => {
+  const diag: Record<string, unknown> = { status: 'ok', ts: new Date().toISOString() }
+
+  // Show masked DATABASE_URL for debugging
+  const dbUrl = process.env.DATABASE_URL ?? '(not set)'
+  diag.dbUrlPreview = dbUrl.replace(/:[^@]+@/, ':***@')
+
+  // DNS lookup test
+  try {
+    const { promises: dns } = await import('dns')
+    const host = dbUrl.match(/@([^:\/]+)/)?.[1] ?? ''
+    diag.dnsHost = host
+    const addresses = await dns.resolve4(host)
+    diag.dnsResult = addresses
+  } catch (err) {
+    diag.dnsError = String(err)
+  }
+
+  // TCP connect test
+  try {
+    const net = await import('net')
+    const host = dbUrl.match(/@([^:\/]+)/)?.[1] ?? ''
+    const port = Number(dbUrl.match(/:(\d+)\//)?.[1] ?? 5432)
+    diag.tcpTarget = `${host}:${port}`
+    await new Promise<void>((resolve, reject) => {
+      const sock = net.createConnection({ host, port, timeout: 5000 }, () => {
+        diag.tcpConnect = 'ok'
+        sock.destroy()
+        resolve()
+      })
+      sock.on('error', (err) => { diag.tcpConnect = 'error'; diag.tcpError = String(err); reject(err) })
+      sock.on('timeout', () => { diag.tcpConnect = 'timeout'; sock.destroy(); reject(new Error('timeout')) })
+    })
+  } catch (_) { /* already logged */ }
+
+  // Prisma test
   try {
     const { prisma } = await import('./lib/prisma.js')
     await prisma.$queryRaw`SELECT 1`
-    return c.json({ status: 'ok', db: 'connected', ts: new Date().toISOString() })
+    diag.db = 'connected'
   } catch (err) {
-    return c.json({ status: 'ok', db: 'error', dbError: String(err), ts: new Date().toISOString() })
+    diag.db = 'error'
+    diag.dbError = String(err)
   }
+
+  return c.json(diag)
 })
 
 // ── API v1 ──────────────────────────────────────────────────
