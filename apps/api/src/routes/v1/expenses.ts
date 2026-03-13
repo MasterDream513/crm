@@ -11,7 +11,7 @@ const expenseSchema = z.object({
   label: z.string().min(1),
   amountJpy: z.number().int().positive(),
   category: z.string().min(1),
-  expenseDate: z.string().datetime(),
+  expenseDate: z.string(),
   note: z.string().optional(),
 })
 

@@ -19,7 +19,7 @@ eventRoutes.get('/', async (c) => {
 
 eventRoutes.post('/', zValidator('json', z.object({
   name: z.string().min(1),
-  eventDate: z.string().datetime(),
+  eventDate: z.string(),
   description: z.string().optional(),
 })), async (c) => {
   const { tenantId } = c.get('user')

@@ -10,7 +10,7 @@ referralRoutes.use('*', authMiddleware)
 const referralSchema = z.object({
   referrerCustomerId: z.string().uuid(),
   referredCustomerId: z.string().uuid(),
-  referralDate: z.string().datetime(),
+  referralDate: z.string(),
   note: z.string().optional(),
 })
 

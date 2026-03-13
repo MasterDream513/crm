@@ -9,7 +9,7 @@ export const marketingFunnelRoutes = new Hono()
 marketingFunnelRoutes.use('*', authMiddleware)
 
 const funnelSchema = z.object({
-  recordDate: z.string().datetime(),
+  recordDate: z.string(),
   campaignLabel: z.string().optional(),
   atv: z.number().optional(),
   epc: z.number().optional(),

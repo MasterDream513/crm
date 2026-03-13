@@ -13,7 +13,7 @@ const customerSchema = z.object({
   address: z.string().optional(),
   email: z.string().email().optional(),
   acquisitionSource: z.string().optional(),
-  firstContactDate: z.string().datetime().optional(),
+  firstContactDate: z.string().optional(),
   notes: z.string().optional(),
 })
 

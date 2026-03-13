@@ -11,11 +11,11 @@ const followLogSchema = z.object({
   customerId: z.string().uuid().optional(),
   prospectId: z.string().uuid().optional(),
   type: z.enum(['CALL', 'LINE', 'MEETING', 'EMAIL', 'LETTER', 'OTHER']),
-  logDate: z.string().datetime(),
+  logDate: z.string(),
   notes: z.string().optional(),
   outcome: z.string().optional(),
   nextAction: z.string().optional(),
-  nextDueDate: z.string().datetime().optional(),
+  nextDueDate: z.string().optional(),
 })
 
 followLogRoutes.post('/', zValidator('json', followLogSchema), async (c) => {
