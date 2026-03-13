@@ -10,7 +10,7 @@ transactionRoutes.use('*', authMiddleware)
 
 const transactionSchema = z.object({
   customerId: z.string().uuid(),
-  productId: z.string().uuid().optional(),
+  productId: z.string().uuid().nullish().or(z.literal('')).transform(v => v || undefined),
   amountJpy: z.number().int().min(0),
   billingType: z.enum(['ONE_TIME', 'RECURRING_MONTHLY', 'RECURRING_ANNUAL']).default('ONE_TIME'),
   subscriptionStatus: z.enum(['ACTIVE', 'PAUSED', 'CANCELLED']).optional(),
