@@ -1,3 +1,5 @@
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 
 declare global {
@@ -6,14 +8,17 @@ declare global {
 }
 
 function createPrismaClient() {
-  const client = new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    datasourceUrl: process.env.DATABASE_URL,
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
   })
+  const adapter = new PrismaPg(pool)
 
-  // Eagerly connect on startup so cold-start failures surface immediately
-  client.$connect().catch((err) => {
-    console.error('Prisma initial connection failed (will retry on first query):', err.message)
+  const client = new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 
   return client
