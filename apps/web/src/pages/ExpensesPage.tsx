@@ -15,20 +15,20 @@ interface Expense {
   note?: string;
 }
 
-const categoryOptions = [
-  { value: 'AD_SPEND', label: '広告費' },
-  { value: 'TOOL', label: 'ツール・システム' },
-  { value: 'OFFICE', label: '事務所・家賃' },
-  { value: 'OUTSOURCE', label: '外注費' },
-  { value: 'TRAVEL', label: '交通費・旅費' },
-  { value: 'SUPPLY', label: '消耗品' },
-  { value: 'OTHER', label: 'その他' },
-];
-
-const categoryLabel = (value: string) => categoryOptions.find((c) => c.value === value)?.label || value;
-
 const ExpensesPage = () => {
   const { t } = useLocale();
+
+  const categoryOptions = [
+    { value: 'AD_SPEND', label: t('catAdSpend') },
+    { value: 'TOOL', label: t('catTool') },
+    { value: 'OFFICE', label: t('catOffice') },
+    { value: 'OUTSOURCE', label: t('catOutsource') },
+    { value: 'TRAVEL', label: t('catTravel') },
+    { value: 'SUPPLY', label: t('catSupply') },
+    { value: 'OTHER', label: t('catOther') },
+  ];
+
+  const categoryLabel = (value: string) => categoryOptions.find((c) => c.value === value)?.label || value;
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,24 +60,24 @@ const ExpensesPage = () => {
         note: form.note || undefined,
       });
       await queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast.success('経費を登録しました');
+      toast.success(t('expenseRegistered'));
       setForm({ label: '', amountJpy: '', category: 'AD_SPEND', expenseDate: today, note: '' });
       setModalOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '登録に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('registrationFailed'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('この経費を削除しますか？')) return;
+    if (!confirm(t('confirmDeleteExpense'))) return;
     try {
       await api.expenses.delete(id);
       await queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast.success('経費を削除しました');
+      toast.success(t('expenseDeleted'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('deleteFailed'));
     }
   };
 
@@ -91,15 +91,15 @@ const ExpensesPage = () => {
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
         >
-          <Plus className="h-4 w-4" /> 経費追加
+          <Plus className="h-4 w-4" /> {t('addExpense')}
         </button>
       </div>
 
       {/* Summary card */}
       <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="text-xs text-muted-foreground mb-1">経費合計（表示分）</div>
+        <div className="text-xs text-muted-foreground mb-1">{t('expenseTotal')}</div>
         <div className="text-2xl font-bold" style={{ color: 'hsl(var(--loss))' }}>{formatYen(totalExpense)}</div>
-        <div className="text-xs text-muted-foreground">{expenses.length} 件</div>
+        <div className="text-xs text-muted-foreground">{expenses.length} {t('items')}</div>
       </div>
 
       {/* Table */}
@@ -108,7 +108,7 @@ const ExpensesPage = () => {
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">読み込み中...</span>
+              <span className="ml-2 text-sm text-muted-foreground">{t('loading')}</span>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -146,7 +146,7 @@ const ExpensesPage = () => {
                 ))}
                 {expenses.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">経費データがありません</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('noExpenseData')}</td>
                   </tr>
                 )}
               </tbody>
@@ -159,14 +159,14 @@ const ExpensesPage = () => {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setModalOpen(false)}>
           <div className="w-full max-w-lg rounded-xl bg-card border shadow-xl p-6 mx-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-5">経費追加</h2>
+            <h2 className="text-lg font-bold mb-5">{t('addExpense')}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">{t('name')}</label>
                 <input
                   value={form.label}
                   onChange={(e) => setForm({ ...form, label: e.target.value })}
-                  placeholder="例) Google広告 3月分"
+                  placeholder={t('placeholderExpense')}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   required
                 />
@@ -213,7 +213,7 @@ const ExpensesPage = () => {
                   <input
                     value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
-                    placeholder="任意メモ"
+                    placeholder={t('optionalMemo')}
                     className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
@@ -227,7 +227,7 @@ const ExpensesPage = () => {
                   disabled={submitting}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {submitting ? '保存中...' : t('save')}
+                  {submitting ? t('saving') : t('save')}
                 </button>
               </div>
             </form>

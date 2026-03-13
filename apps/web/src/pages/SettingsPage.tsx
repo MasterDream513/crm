@@ -5,25 +5,25 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Settings, Link2, Star, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
-const rankTiers = [
-  { rank: 'RANK_1', label: '無料会員', threshold: '¥0', color: 'hsl(var(--rank-1))' },
-  { rank: 'RANK_2', label: '一般客', threshold: '〜¥30,000', color: 'hsl(var(--rank-2))' },
-  { rank: 'RANK_3', label: '優良客', threshold: '〜¥100,000', color: 'hsl(var(--rank-3))' },
-  { rank: 'RANK_4', label: 'VIP予備', threshold: '〜¥500,000', color: 'hsl(var(--rank-4))' },
-  { rank: 'RANK_5', label: 'VIP', threshold: '〜¥1,000,000', color: 'hsl(var(--rank-5))' },
-  { rank: 'RANK_6', label: 'スーパーVIP', threshold: '¥1,000,000+', color: 'hsl(var(--rank-6))' },
-];
-
-const integrationDisplayMap: Record<string, { name: string; desc: string }> = {
-  UTAGE: { name: 'UTAGE', desc: 'webhook受信' },
-  FREEE: { name: 'Freee', desc: '会計連携' },
-  GOOGLE_ANALYTICS: { name: 'Google Analytics', desc: 'アクセス解析' },
-  META_ADS: { name: 'Meta Ads', desc: '広告連携' },
-  CLICKFUNNELS: { name: 'ClickFunnels', desc: 'ファネル連携' },
-};
-
 const SettingsPage = () => {
   const { t } = useLocale();
+
+  const rankTiers = [
+    { rank: 'RANK_1', label: t('rank1'), threshold: '¥0', color: 'hsl(var(--rank-1))' },
+    { rank: 'RANK_2', label: t('rank2'), threshold: '〜¥30,000', color: 'hsl(var(--rank-2))' },
+    { rank: 'RANK_3', label: t('rank3'), threshold: '〜¥100,000', color: 'hsl(var(--rank-3))' },
+    { rank: 'RANK_4', label: t('rank4'), threshold: '〜¥500,000', color: 'hsl(var(--rank-4))' },
+    { rank: 'RANK_5', label: t('rank5'), threshold: '〜¥1,000,000', color: 'hsl(var(--rank-5))' },
+    { rank: 'RANK_6', label: t('rank6'), threshold: '¥1,000,000+', color: 'hsl(var(--rank-6))' },
+  ];
+
+  const integrationDisplayMap: Record<string, { name: string; desc: string }> = {
+    UTAGE: { name: 'UTAGE', desc: t('intUtage') },
+    FREEE: { name: 'Freee', desc: t('intFreee') },
+    GOOGLE_ANALYTICS: { name: 'Google Analytics', desc: t('intGA') },
+    META_ADS: { name: 'Meta Ads', desc: t('intMeta') },
+    CLICKFUNNELS: { name: 'ClickFunnels', desc: t('intClickFunnels') },
+  };
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -66,10 +66,10 @@ const SettingsPage = () => {
         timezone: form.timezone,
       });
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast.success('設定を保存しました');
+      toast.success(t('settingsSaved'));
       setEditing(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '保存に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -118,7 +118,7 @@ const SettingsPage = () => {
               className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
-              {saving ? '保存中...' : t('save')}
+              {saving ? t('saving') : t('save')}
             </button>
           </div>
         )}
@@ -143,10 +143,10 @@ const SettingsPage = () => {
                   max={365}
                   className="w-full rounded-lg border bg-background px-3 py-1.5 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <span className="text-sm text-muted-foreground">日</span>
+                <span className="text-sm text-muted-foreground">{t('days')}</span>
               </div>
             ) : (
-              <p className="text-lg font-semibold text-card-foreground">{form.churnThresholdDays}日</p>
+              <p className="text-lg font-semibold text-card-foreground">{form.churnThresholdDays}{t('days')}</p>
             )}
           </div>
           <div className="rounded-xl border bg-card p-4 shadow-sm">
@@ -168,7 +168,7 @@ const SettingsPage = () => {
             )}
           </div>
           <div className="rounded-xl border bg-card p-4 shadow-sm">
-            <p className="text-xs text-muted-foreground mb-1">MA-CPS計算式</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('maCpsFormula')}</p>
             <p className="text-lg font-semibold text-card-foreground">LTV × {form.maCpsMarginRate}%</p>
           </div>
           <div className="rounded-xl border bg-card p-4 shadow-sm">

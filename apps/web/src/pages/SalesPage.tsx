@@ -53,15 +53,15 @@ const SalesPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerId) {
-      toast.error('顧客を選択してください');
+      toast.error(t('selectCustomer' as any));
       return;
     }
     if (mode === 'product' && !productId) {
-      toast.error('商品を選択してください');
+      toast.error(t('selectProduct' as any));
       return;
     }
     if (mode === 'direct' && (!amountJpy || Number(amountJpy) <= 0)) {
-      toast.error('金額を入力してください');
+      toast.error(t('enterAmount' as any));
       return;
     }
 
@@ -78,7 +78,7 @@ const SalesPage = () => {
         payload.productId = productId;
       }
       await api.transactions.create(payload);
-      toast.success('売上を登録しました');
+      toast.success(t('saleRegistered' as any));
       queryClient.invalidateQueries({ queryKey: ['transactions-summary'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       // Reset form
@@ -86,7 +86,7 @@ const SalesPage = () => {
       setAmountJpy('');
       setNote('');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '登録に失敗しました';
+      const message = err instanceof Error ? err.message : t('registrationFailed' as any);
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -129,7 +129,7 @@ const SalesPage = () => {
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
               >
-                <option value="">-- 選択 --</option>
+                <option value="">{t('select' as any)}</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -144,7 +144,7 @@ const SalesPage = () => {
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
                 >
-                  <option value="">-- 選択 --</option>
+                  <option value="">{t('select' as any)}</option>
                   {products.filter((p) => p.isActive).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} — {formatYen(p.priceJpy)}
@@ -153,7 +153,7 @@ const SalesPage = () => {
                 </select>
                 {selectedProduct && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    価格: {formatYen(selectedProduct.priceJpy)} ({selectedProduct.billingType})
+                    {t('priceLabel' as any)}: {formatYen(selectedProduct.priceJpy)} ({selectedProduct.billingType})
                   </p>
                 )}
               </div>
@@ -198,7 +198,7 @@ const SalesPage = () => {
               disabled={submitting}
               className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {submitting ? '登録中...' : t('registerSale')}
+              {submitting ? t('registering' as any) : t('registerSale')}
             </button>
           </form>
         </div>
@@ -246,7 +246,7 @@ const SalesPage = () => {
               );
             })}
             {topProducts.length === 0 && (
-              <p className="text-xs text-muted-foreground">データがありません</p>
+              <p className="text-xs text-muted-foreground">{t('noData' as any)}</p>
             )}
           </div>
         </div>

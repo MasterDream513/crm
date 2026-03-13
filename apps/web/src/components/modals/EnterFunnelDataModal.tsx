@@ -51,10 +51,10 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.recordDate) e.recordDate = '日付は必須です';
-    if (!form.totalClicks || Number(form.totalClicks) < 0) e.totalClicks = '有効な数値を入力してください';
-    if (!form.totalRevenue || Number(form.totalRevenue) < 0) e.totalRevenue = '有効な金額を入力してください';
-    if (!form.totalAdSpend || Number(form.totalAdSpend) < 0) e.totalAdSpend = '有効な金額を入力してください';
+    if (!form.recordDate) e.recordDate = t('dateRequired');
+    if (!form.totalClicks || Number(form.totalClicks) < 0) e.totalClicks = t('validNumber');
+    if (!form.totalRevenue || Number(form.totalRevenue) < 0) e.totalRevenue = t('validAmount');
+    if (!form.totalAdSpend || Number(form.totalAdSpend) < 0) e.totalAdSpend = t('validAmount');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -110,11 +110,11 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
               {errors.recordDate && <p className="text-xs text-destructive">{errors.recordDate}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">キャンペーン名</label>
+              <label className="text-sm font-medium text-foreground">{t('campaignName')}</label>
               <input
                 value={form.campaignLabel}
                 onChange={(e) => set('campaignLabel', e.target.value)}
-                placeholder="例: Meta春キャンペーン"
+                placeholder={t('campaignPlaceholder')}
                 maxLength={100}
                 className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
               />
@@ -123,10 +123,10 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
 
           {/* Raw metrics */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">生データ入力</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('rawDataInput')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">総クリック数 <span className="text-destructive">*</span></label>
+                <label className="text-xs font-medium text-muted-foreground">{t('totalClicks')} <span className="text-destructive">*</span></label>
                 <input
                   type="number"
                   min="0"
@@ -138,7 +138,7 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
                 {errors.totalClicks && <p className="text-xs text-destructive">{errors.totalClicks}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">総売上 (¥) <span className="text-destructive">*</span></label>
+                <label className="text-xs font-medium text-muted-foreground">{t('totalRevenue')} (¥) <span className="text-destructive">*</span></label>
                 <input
                   type="number"
                   min="0"
@@ -150,7 +150,7 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
                 {errors.totalRevenue && <p className="text-xs text-destructive">{errors.totalRevenue}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">総広告費 (¥) <span className="text-destructive">*</span></label>
+                <label className="text-xs font-medium text-muted-foreground">{t('totalAdSpend')} (¥) <span className="text-destructive">*</span></label>
                 <input
                   type="number"
                   min="0"
@@ -164,7 +164,7 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">新規顧客数</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('newCustomerCount')}</label>
                 <input
                   type="number"
                   min="0"
@@ -175,7 +175,7 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">販売件数</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('salesCount')}</label>
                 <input
                   type="number"
                   min="0"
@@ -190,7 +190,7 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
 
           {/* Auto-calculated metrics */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">自動計算指標</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t('autoCalculated')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {metricCard('EPC', epc, 'hsl(var(--chart-emerald))')}
               {metricCard('CPC', cpc, 'hsl(var(--chart-rose))')}
@@ -207,8 +207,8 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
                 }}
               >
                 {epc > cpc
-                  ? `✅ 広告は黒字 — クリックあたり ¥${(epc - cpc).toLocaleString()} の利益`
-                  : `⚠️ 広告は赤字 — クリックあたり ¥${(cpc - epc).toLocaleString()} の損失`
+                  ? `${t('adProfitable')} — ¥${(epc - cpc).toLocaleString()} ${t('profitPerClick')}`
+                  : `${t('adLoss')} — ¥${(cpc - epc).toLocaleString()} ${t('lossPerClick')}`
                 }
               </div>
             )}
@@ -222,7 +222,7 @@ const EnterFunnelDataModal = ({ open, onClose, onSubmit }: EnterFunnelDataModalP
               onChange={(e) => set('notes', e.target.value)}
               rows={2}
               maxLength={500}
-              placeholder="メモを入力..."
+              placeholder={t('enterMemo')}
               className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-shadow"
             />
           </div>

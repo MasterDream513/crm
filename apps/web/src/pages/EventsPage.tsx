@@ -21,14 +21,14 @@ interface Attendee {
   prospect?: { id: string; name: string };
 }
 
-const statusConfig = {
-  REGISTERED: { label: '登録済', color: 'hsl(var(--chart-blue))', icon: Clock },
-  ATTENDED: { label: '参加', color: 'hsl(var(--profit))', icon: CheckCircle },
-  NO_SHOW: { label: 'ドタキャン', color: 'hsl(var(--loss))', icon: XCircle },
-};
-
 const EventsPage = () => {
   const { t } = useLocale();
+
+  const statusConfig = {
+    REGISTERED: { label: t('registered'), color: 'hsl(var(--chart-blue))', icon: Clock },
+    ATTENDED: { label: t('attended'), color: 'hsl(var(--profit))', icon: CheckCircle },
+    NO_SHOW: { label: t('noShow'), color: 'hsl(var(--loss))', icon: XCircle },
+  };
   const queryClient = useQueryClient();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -67,11 +67,11 @@ const EventsPage = () => {
         description: form.description || undefined,
       });
       await queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('イベントを作成しました');
+      toast.success(t('eventCreated'));
       setForm({ name: '', eventDate: today, description: '' });
       setCreateModalOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '作成に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('creationFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -90,11 +90,11 @@ const EventsPage = () => {
           body: JSON.stringify({ status }),
         }
       );
-      if (!res.ok) throw new Error('更新に失敗しました');
+      if (!res.ok) throw new Error(t('updateFailed'));
       await queryClient.invalidateQueries({ queryKey: ['event-attendees', eventId] });
-      toast.success('ステータスを更新しました');
+      toast.success(t('statusUpdated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '更新に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('updateFailed'));
     }
   };
 
@@ -108,26 +108,26 @@ const EventsPage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">セミナー・イベント管理</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t('eventManagement')}</h1>
         <button
           onClick={() => setCreateModalOpen(true)}
           className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
         >
-          <Plus className="h-4 w-4" /> イベント作成
+          <Plus className="h-4 w-4" /> {t('createEvent')}
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Event List */}
         <div className="lg:col-span-1 space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-2">イベント一覧</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2">{t('eventList')}</h2>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : events.length === 0 ? (
             <div className="rounded-xl border bg-card p-6 text-center text-muted-foreground">
-              イベントがありません
+              {t('noEvents')}
             </div>
           ) : (
             events.map((event) => (
@@ -161,7 +161,7 @@ const EventsPage = () => {
         <div className="lg:col-span-2">
           {!selectedEventId ? (
             <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
-              左のイベントを選択して参加者を管理
+              {t('selectEventToManage')}
             </div>
           ) : (
             <div className="space-y-4">
@@ -173,15 +173,15 @@ const EventsPage = () => {
               {/* Attendance Stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl border bg-card p-3 shadow-sm text-center">
-                  <p className="text-xs text-muted-foreground">参加率</p>
+                  <p className="text-xs text-muted-foreground">{t('attendanceRate')}</p>
                   <p className="text-xl font-bold text-foreground">{attendanceRate}%</p>
                 </div>
                 <div className="rounded-xl border bg-card p-3 shadow-sm text-center">
-                  <p className="text-xs text-muted-foreground">参加</p>
+                  <p className="text-xs text-muted-foreground">{t('attended')}</p>
                   <p className="text-xl font-bold" style={{ color: 'hsl(var(--profit))' }}>{attendedCount}</p>
                 </div>
                 <div className="rounded-xl border bg-card p-3 shadow-sm text-center">
-                  <p className="text-xs text-muted-foreground">ドタキャン</p>
+                  <p className="text-xs text-muted-foreground">{t('noShow')}</p>
                   <p className="text-xl font-bold" style={{ color: 'hsl(var(--loss))' }}>{noShowCount}</p>
                 </div>
               </div>
@@ -193,7 +193,7 @@ const EventsPage = () => {
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : attendees.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-muted-foreground text-sm">参加者がいません</div>
+                  <div className="px-4 py-8 text-center text-muted-foreground text-sm">{t('noAttendees')}</div>
                 ) : (
                   <table className="w-full text-sm">
                     <thead>
@@ -205,7 +205,7 @@ const EventsPage = () => {
                     </thead>
                     <tbody>
                       {attendees.map((att, i) => {
-                        const name = att.customer?.name || att.prospect?.name || '不明';
+                        const name = att.customer?.name || att.prospect?.name || t('unknown');
                         const cfg = statusConfig[att.status];
                         const Icon = cfg.icon;
                         return (
@@ -251,14 +251,14 @@ const EventsPage = () => {
       {createModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setCreateModalOpen(false)}>
           <div className="w-full max-w-lg rounded-xl bg-card border shadow-xl p-6 mx-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-5">イベント作成</h2>
+            <h2 className="text-lg font-bold mb-5">{t('createEvent')}</h2>
             <form onSubmit={handleCreateEvent} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">{t('name')}</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="例) 無料セミナー（新規集客革命セミナー）"
+                  placeholder={t('exampleSeminar')}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   required
                 />
@@ -274,12 +274,12 @@ const EventsPage = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">説明</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('description')}</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
-                  placeholder="任意"
+                  placeholder={t('optional')}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                 />
               </div>
@@ -292,7 +292,7 @@ const EventsPage = () => {
                   disabled={submitting}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {submitting ? '作成中...' : t('create')}
+                  {submitting ? t('creating') : t('create')}
                 </button>
               </div>
             </form>

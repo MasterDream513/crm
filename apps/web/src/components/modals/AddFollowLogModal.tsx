@@ -19,17 +19,17 @@ interface AddFollowLogModalProps {
   onSubmit: (data: FollowLogFormData) => Promise<void>;
 }
 
-const followTypes: { value: FollowLogType; label: string }[] = [
-  { value: 'CALL', label: '電話' },
-  { value: 'LINE', label: 'LINE' },
-  { value: 'MEETING', label: '面談' },
-  { value: 'EMAIL', label: 'メール' },
-  { value: 'LETTER', label: '手紙' },
-  { value: 'OTHER', label: 'その他' },
-];
-
 const AddFollowLogModal: React.FC<AddFollowLogModalProps> = ({ open, onClose, onSubmit }) => {
   const { t } = useLocale();
+
+  const followTypes: { value: FollowLogType; label: string }[] = [
+    { value: 'CALL', label: t('call') },
+    { value: 'LINE', label: t('line') },
+    { value: 'MEETING', label: t('meeting') },
+    { value: 'EMAIL', label: t('email') },
+    { value: 'LETTER', label: t('letter') },
+    { value: 'OTHER', label: t('other') },
+  ];
   const today = new Date().toISOString().split('T')[0];
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<FollowLogFormData>({
@@ -98,7 +98,7 @@ const AddFollowLogModal: React.FC<AddFollowLogModalProps> = ({ open, onClose, on
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={3}
-              placeholder="対応内容を記録..."
+              placeholder={t('recordContent')}
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
             />
           </div>
@@ -109,7 +109,7 @@ const AddFollowLogModal: React.FC<AddFollowLogModalProps> = ({ open, onClose, on
             <input
               value={form.outcome}
               onChange={(e) => setForm({ ...form, outcome: e.target.value })}
-              placeholder="結果: 例) 次回セミナー参加予定"
+              placeholder={t('outcomeExample')}
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -121,7 +121,7 @@ const AddFollowLogModal: React.FC<AddFollowLogModalProps> = ({ open, onClose, on
               <input
                 value={form.nextAction}
                 onChange={(e) => setForm({ ...form, nextAction: e.target.value })}
-                placeholder="例) フォローアップ電話"
+                placeholder={t('nextActionExample')}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -146,7 +146,7 @@ const AddFollowLogModal: React.FC<AddFollowLogModalProps> = ({ open, onClose, on
               disabled={submitting}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {submitting ? '保存中...' : t('save')}
+              {submitting ? t('saving') : t('save')}
             </button>
           </div>
         </form>

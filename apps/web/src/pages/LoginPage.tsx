@@ -25,7 +25,7 @@ const LoginPage = () => {
       login(res.accessToken, res.user, res.refreshToken);
       navigate('/', { replace: true });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Login failed');
+      toast.error(err instanceof Error ? err.message : t('loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ const LoginPage = () => {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                {locale === 'ja' ? 'パスワード' : 'Password'}
+                {t('password')}
               </label>
               <div className="relative">
                 <input

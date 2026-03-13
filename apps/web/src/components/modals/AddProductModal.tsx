@@ -20,20 +20,6 @@ export interface ProductFormData {
   isActive: boolean;
 }
 
-const categoryOptions: { value: ProductCategory; label: string }[] = [
-  { value: 'LIST_ACQUISITION', label: 'リスト獲得' },
-  { value: 'INDIVIDUAL', label: '個別' },
-  { value: 'SEMINAR', label: 'セミナー' },
-  { value: 'ONLINE_COURSE', label: 'オンライン講座' },
-  { value: 'SUBSCRIPTION', label: 'サブスクリプション' },
-];
-
-const billingOptions: { value: BillingType; label: string }[] = [
-  { value: 'ONE_TIME', label: '一括' },
-  { value: 'RECURRING_MONTHLY', label: '月額' },
-  { value: 'RECURRING_ANNUAL', label: '年額' },
-];
-
 const defaultForm: ProductFormData = {
   name: '',
   priceJpy: '',
@@ -45,6 +31,20 @@ const defaultForm: ProductFormData = {
 
 const AddProductModal = ({ open, onClose, onSubmit, initialData, title }: AddProductModalProps) => {
   const { t } = useLocale();
+
+  const categoryOptions: { value: ProductCategory; label: string }[] = [
+    { value: 'LIST_ACQUISITION', label: t('catListAcquisition') },
+    { value: 'INDIVIDUAL', label: t('catIndividual') },
+    { value: 'SEMINAR', label: t('catSeminar') },
+    { value: 'ONLINE_COURSE', label: t('catOnlineCourse') },
+    { value: 'SUBSCRIPTION', label: t('catSubscription') },
+  ];
+
+  const billingOptions: { value: BillingType; label: string }[] = [
+    { value: 'ONE_TIME', label: t('oneTime') },
+    { value: 'RECURRING_MONTHLY', label: t('recurringMonthly') },
+    { value: 'RECURRING_ANNUAL', label: t('recurringAnnual') },
+  ];
   const [form, setForm] = useState<ProductFormData>({ ...defaultForm, ...initialData });
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({});
 
@@ -59,10 +59,10 @@ const AddProductModal = ({ open, onClose, onSubmit, initialData, title }: AddPro
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.name.trim()) e.name = '商品名は必須です';
-    else if (form.name.length > 100) e.name = '100文字以内で入力してください';
-    if (!form.priceJpy) e.priceJpy = '価格は必須です';
-    else if (isNaN(Number(form.priceJpy)) || Number(form.priceJpy) < 0) e.priceJpy = '有効な金額を入力してください';
+    if (!form.name.trim()) e.name = t('productNameRequired');
+    else if (form.name.length > 100) e.name = t('maxChars100');
+    if (!form.priceJpy) e.priceJpy = t('priceRequired');
+    else if (isNaN(Number(form.priceJpy)) || Number(form.priceJpy) < 0) e.priceJpy = t('validAmount');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -104,7 +104,7 @@ const AddProductModal = ({ open, onClose, onSubmit, initialData, title }: AddPro
             <input
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
-              placeholder="商品名を入力"
+              placeholder={t('enterProductName')}
               className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
@@ -162,13 +162,13 @@ const AddProductModal = ({ open, onClose, onSubmit, initialData, title }: AddPro
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">説明</label>
+            <label className="text-sm font-medium text-foreground">{t('description')}</label>
             <textarea
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
               rows={3}
               maxLength={500}
-              placeholder="商品の説明を入力..."
+              placeholder={t('productDescription')}
               className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-shadow"
             />
             <p className="text-xs text-muted-foreground text-right">{form.description.length}/500</p>
@@ -178,7 +178,7 @@ const AddProductModal = ({ open, onClose, onSubmit, initialData, title }: AddPro
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <p className="text-sm font-medium text-foreground">{t('active')}</p>
-              <p className="text-xs text-muted-foreground">商品を公開状態にする</p>
+              <p className="text-xs text-muted-foreground">{t('makeProductActive')}</p>
             </div>
             <button
               type="button"

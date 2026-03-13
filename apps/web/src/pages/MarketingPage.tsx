@@ -45,27 +45,27 @@ const MarketingPage = () => {
 
   const diagnostics = [
     {
-      label: 'CPC > EPC',
+      label: t('diagCpcGtEpc'),
       status: latest.cpc > latest.epc ? 'danger' : 'ok',
-      diagnosis: latest.cpc > latest.epc ? '広告クリエイティブまたはターゲティングを見直す' : 'クリックあたり利益が出ています',
+      diagnosis: latest.cpc > latest.epc ? t('diagCpcGtEpcBad') : t('diagCpcGtEpcGood'),
       icon: latest.cpc > latest.epc ? AlertTriangle : CheckCircle,
     },
     {
-      label: 'CPA > MA-CPS',
+      label: t('diagCpaGtMaCps'),
       status: latest.cpa > latest.maCps ? 'danger' : 'ok',
-      diagnosis: latest.cpa > latest.maCps ? 'ファネル全体のCVRを改善する' : '顧客獲得コストは許容範囲内',
+      diagnosis: latest.cpa > latest.maCps ? t('diagCpaGtMaCpsBad') : t('diagCpaGtMaCpsGood'),
       icon: latest.cpa > latest.maCps ? AlertTriangle : CheckCircle,
     },
     {
-      label: 'ATV 低下',
+      label: t('diagAtvLow'),
       status: 'ok',
-      diagnosis: 'アップセル/クロスセルを強化する',
+      diagnosis: t('diagAtvLowMsg'),
       icon: AlertCircle,
     },
     {
-      label: 'LTV 高い + CPC 赤字',
+      label: t('diagLtvHighCpcLoss'),
       status: isProfitable ? 'na' : 'info',
-      diagnosis: 'リストの質は高い。短期赤字は許容可能',
+      diagnosis: t('diagLtvHighCpcLossMsg'),
       icon: CheckCircle,
     },
   ];
@@ -94,9 +94,9 @@ const MarketingPage = () => {
       {funnelRecords.length === 0 ? (
         <div className="rounded-xl border bg-card p-12 shadow-sm text-center space-y-3">
           <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto" />
-          <p className="text-lg font-semibold text-card-foreground">No data yet</p>
+          <p className="text-lg font-semibold text-card-foreground">{t('noDataYet')}</p>
           <p className="text-sm text-muted-foreground">
-            ファネルデータを登録すると、マーケティング分析が表示されます。
+            {t('funnelEmptyMessage')}
           </p>
           <button
             onClick={() => setModalOpen(true)}
@@ -112,10 +112,10 @@ const MarketingPage = () => {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">{t('adPerformance')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <KpiCard title={t('cpa')} value={formatYen(latest.cpa)} borderColor="hsl(var(--chart-indigo))" tooltip="広告費 ÷ 新規顧客数" />
-              <KpiCard title={t('cps')} value={formatYen(latest.cpa)} borderColor="hsl(var(--chart-blue))" tooltip="広告費 ÷ 販売件数" />
-              <KpiCard title={t('epc')} value={formatYen(latest.epc)} borderColor="hsl(var(--chart-emerald))" tooltip="売上 ÷ クリック数" />
-              <KpiCard title={t('cpc')} value={formatYen(latest.cpc)} borderColor="hsl(var(--chart-rose))" tooltip="広告費 ÷ クリック数" />
+              <KpiCard title={t('cpa')} value={formatYen(latest.cpa)} borderColor="hsl(var(--chart-indigo))" tooltip={t('tooltipCpaShort')} />
+              <KpiCard title={t('cps')} value={formatYen(latest.cpa)} borderColor="hsl(var(--chart-blue))" tooltip={t('tooltipCpsShort')} />
+              <KpiCard title={t('epc')} value={formatYen(latest.epc)} borderColor="hsl(var(--chart-emerald))" tooltip={t('tooltipEpcShort')} />
+              <KpiCard title={t('cpc')} value={formatYen(latest.cpc)} borderColor="hsl(var(--chart-rose))" tooltip={t('tooltipCpcShort')} />
             </div>
           </section>
 
@@ -144,8 +144,8 @@ const MarketingPage = () => {
                   }}
                 >
                   {isProfitable
-                    ? `✅ 広告は黒字 — クリックあたり ¥${(latest.epc - latest.cpc).toLocaleString()} の利益`
-                    : `⚠️ 広告は赤字 — クリックあたり ¥${(latest.cpc - latest.epc).toLocaleString()} の損失`
+                    ? `${t('adProfitable')} — ¥${(latest.epc - latest.cpc).toLocaleString()} ${t('profitPerClick')}`
+                    : `${t('adLoss')} — ¥${(latest.cpc - latest.epc).toLocaleString()} ${t('lossPerClick')}`
                   }
                 </div>
               </div>
@@ -170,7 +170,7 @@ const MarketingPage = () => {
                     color: isCpaSafe ? 'hsl(var(--profit))' : 'hsl(var(--loss))',
                   }}
                 >
-                  {isCpaSafe ? '✅ 顧客獲得コストは許容範囲内' : '⚠️ 顧客獲得コストがLTVベースの上限を超えています'}
+                  {isCpaSafe ? t('cpaSafe') : t('cpaOver')}
                 </div>
               </div>
 
@@ -178,7 +178,7 @@ const MarketingPage = () => {
               <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
                 <p className="text-xs text-muted-foreground">{t('atv')}</p>
                 <p className="text-3xl font-bold text-foreground">{formatYen(latest.atv)}</p>
-                <p className="text-xs text-muted-foreground">ClickFunnels equivalent — セールスファネルの効率指標</p>
+                <p className="text-xs text-muted-foreground">{t('clickFunnelsDesc')}</p>
               </div>
             </div>
           </section>
@@ -215,7 +215,7 @@ const MarketingPage = () => {
             <h2 className="text-lg font-semibold text-foreground">{t('trendCharts')}</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="rounded-xl border bg-card p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">EPC vs CPC 推移</h3>
+                <h3 className="text-sm font-semibold text-card-foreground mb-4">{t('epcVsCpcTrend')}</h3>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={trendData}>
                     <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
@@ -232,7 +232,7 @@ const MarketingPage = () => {
               </div>
 
               <div className="rounded-xl border bg-card p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">ATV 推移</h3>
+                <h3 className="text-sm font-semibold text-card-foreground mb-4">{t('atvTrend')}</h3>
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={trendData}>
                     <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
@@ -264,10 +264,10 @@ const MarketingPage = () => {
               notes: data.notes,
             });
             await queryClient.invalidateQueries({ queryKey: ['marketing-funnel'] });
-            toast.success(`${data.recordDate} のファネルデータを登録しました`);
+            toast.success(data.recordDate + t('funnelRegistered'));
             setModalOpen(false);
           } catch (err: any) {
-            toast.error(err.message || 'ファネルデータの登録に失敗しました');
+            toast.error(err.message || t('funnelRegistrationFailed'));
           }
         }}
       />

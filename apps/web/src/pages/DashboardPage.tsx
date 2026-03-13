@@ -59,27 +59,27 @@ const DashboardPage = () => {
             detail={`${t('profit')}: ${formatYen(d.daily.profitJpy)} | ${t('expense')}: ${formatYen(d.daily.expenseJpy)}`}
             borderColor={d.daily.isProfit ? 'hsl(var(--profit))' : 'hsl(var(--loss))'}
             badge={d.daily.isProfit ? { label: t('profitLabel'), variant: 'profit' } : { label: t('lossLabel'), variant: 'loss' }}
-            tooltip="本日の売上・利益・経費 — 赤字なら経費を見直すか売上施策を強化"
+            tooltip={t('tooltipDailyRevenue')}
           />
           <KpiCard
             title={t('newCustomers')}
             value={String(d.daily.newCustomers)}
             detail={t('todayNew')}
             borderColor="hsl(var(--chart-indigo))"
-            tooltip="本日獲得した新規顧客数 — 少ない場合は集客チャネルを確認"
+            tooltip={t('tooltipNewCustomers')}
           />
           <KpiCard
             title={t('followDone')}
             value={String(d.daily.existingCustomersHandled)}
             detail={t('followDone')}
             borderColor="hsl(var(--chart-blue))"
-            tooltip="本日実施したフォローアップ件数 — 目標件数を決めて毎日チェック"
+            tooltip={t('tooltipFollowDone')}
           />
           <KpiCard
             title={t('repeatRate')}
             value={formatPercent(d.daily.repeatRate)}
             borderColor="hsl(var(--chart-emerald))"
-            tooltip="リピーター率 — 低い場合はフォロー頻度やオファーを見直す"
+            tooltip={t('tooltipRepeatRate')}
           />
           <KpiCard
             title={t('churnRisk')}
@@ -87,7 +87,7 @@ const DashboardPage = () => {
             detail={t('over90Days')}
             borderColor={d.daily.churnRiskCount > 0 ? 'hsl(var(--warning))' : 'hsl(var(--chart-emerald))'}
             badge={d.daily.churnRiskCount > 0 ? { label: `${d.daily.churnRiskCount}`, variant: 'warning' } : undefined}
-            tooltip="90日以上未購入の顧客数 — 多い場合は再来店キャンペーンを検討"
+            tooltip={t('tooltipChurnRisk')}
           />
         </div>
       </section>
@@ -99,19 +99,19 @@ const DashboardPage = () => {
           <KpiCard
             title={t('cpa')}
             value={formatYen(d.weekly.cpa || 0)}
-            tooltip="広告費 ÷ 新規顧客数 — 低いほど効率的。高い場合は広告クリエイティブやターゲティングを見直す"
+            tooltip={t('tooltipCpa')}
             borderColor="hsl(var(--chart-indigo))"
           />
           <KpiCard
             title={t('cps')}
             value={formatYen(d.weekly.cps || 0)}
-            tooltip="広告費 ÷ 販売件数 — MA-CPSを超えていたら広告費の削減を検討"
+            tooltip={t('tooltipCps')}
             borderColor="hsl(var(--chart-blue))"
           />
           <KpiCard
             title={t('epc')}
             value={formatYen(d.weekly.epc || 0)}
-            tooltip="売上 ÷ クリック数 — CPCより高ければ黒字。LP改善で向上可能"
+            tooltip={t('tooltipEpc')}
             borderColor="hsl(var(--chart-emerald))"
             badge={d.weekly.epc && d.weekly.cpc && d.weekly.epc > d.weekly.cpc
               ? { label: t('profitLabel'), variant: 'profit' }
@@ -121,7 +121,7 @@ const DashboardPage = () => {
           <KpiCard
             title={t('cpc')}
             value={formatYen(d.weekly.cpc || 0)}
-            tooltip="広告費 ÷ クリック数 — EPCより低ければ黒字。入札戦略で調整"
+            tooltip={t('tooltipCpc')}
             borderColor="hsl(var(--chart-rose))"
             badge={d.weekly.cpc && d.weekly.epc && d.weekly.cpc > d.weekly.epc
               ? { label: t('lossLabel'), variant: 'loss' }
@@ -131,7 +131,7 @@ const DashboardPage = () => {
           <KpiCard
             title={t('atv')}
             value={formatYen(d.weekly.atv || 0)}
-            tooltip="平均取引額 — アップセルやセット販売で向上。低下傾向なら商品構成を見直す"
+            tooltip={t('tooltipAtv')}
             borderColor="hsl(var(--chart-amber))"
           />
         </div>
@@ -150,14 +150,14 @@ const DashboardPage = () => {
             value={String(d.weekly.referralCount)}
             detail={t('weeklyReferrals')}
             borderColor="hsl(var(--chart-indigo))"
-            tooltip="今週の紹介件数 — 紹介プログラムの活性度を示す。顧客満足度の先行指標"
+            tooltip={t('tooltipReferrals')}
           />
           <KpiCard
             title={t('conversionRate')}
             value={d.weekly.conversionRate != null ? `${d.weekly.conversionRate}%` : '—'}
-            detail={d.weekly.totalProspects != null ? `${d.weekly.convertedCount ?? 0} / ${d.weekly.totalProspects} 件` : undefined}
+            detail={d.weekly.totalProspects != null ? `${d.weekly.convertedCount ?? 0} / ${d.weekly.totalProspects} ${t('items')}` : undefined}
             borderColor="hsl(var(--chart-emerald))"
-            tooltip="潜在顧客→顧客の引き上げ率 — 低い場合はナーチャリング施策やセミナー参加を促進"
+            tooltip={t('tooltipConversion')}
           />
         </div>
       </section>
@@ -170,14 +170,14 @@ const DashboardPage = () => {
             title={t('ltv')}
             value={formatYen(d.monthly.ltvAvg)}
             detail={t('allCustomersAvg')}
-            tooltip="全顧客の平均累計売上 — 高いほどビジネスの収益力が強い。フォローとリピート施策で向上"
+            tooltip={t('tooltipLtv')}
             borderColor="hsl(var(--chart-indigo))"
           />
           <KpiCard
             title={t('maCps')}
             value={formatYen(d.monthly.maCps)}
             detail={`LTV × 60%`}
-            tooltip="顧客獲得の上限コスト — CPAがこれを超えると赤字。広告費の基準値として使用"
+            tooltip={t('tooltipMaCps')}
             borderColor="hsl(var(--chart-blue))"
           />
           <KpiCard
@@ -185,7 +185,7 @@ const DashboardPage = () => {
             value={formatYen(d.monthly.profitJpy)}
             borderColor={d.monthly.isProfit ? 'hsl(var(--profit))' : 'hsl(var(--loss))'}
             badge={d.monthly.isProfit ? { label: t('profitLabel'), variant: 'profit' } : { label: t('lossLabel'), variant: 'loss' }}
-            tooltip="月間の売上 − 経費 — 赤字が続く場合は経費削減か単価アップを検討"
+            tooltip={t('tooltipMonthlyBalance')}
           />
         </div>
 
@@ -198,9 +198,9 @@ const DashboardPage = () => {
           <KpiCard
             title={t('subscriptionMrr')}
             value={formatYen(d.monthly.subscriptionMrr)}
-            detail={d.monthly.subscriptionMembers != null ? `${d.monthly.subscriptionMembers}名が継続中` : undefined}
+            detail={d.monthly.subscriptionMembers != null ? `${d.monthly.subscriptionMembers}${t('subscribersActive')}` : undefined}
             borderColor="hsl(var(--chart-indigo))"
-            tooltip="月額・年額サブスクの合計月間収益 — 安定収益の柱。解約率に注意"
+            tooltip={t('tooltipSubscriptionMrr')}
             badge={d.monthly.subscriptionChangeRate != null && d.monthly.subscriptionChangeRate !== 0
               ? {
                   label: `${d.monthly.subscriptionChangeRate > 0 ? '+' : ''}${d.monthly.subscriptionChangeRate}%`,
@@ -213,14 +213,14 @@ const DashboardPage = () => {
             title={t('newCustomers')}
             value={String(d.monthly.newCustomers)}
             borderColor="hsl(var(--chart-emerald))"
-            tooltip="今月の新規顧客数 — 集客チャネルの効果を示す。減少傾向なら広告やSEOを強化"
+            tooltip={t('tooltipMonthlyNewCustomers')}
           />
           <KpiCard
             title={`${t('repeatRate')}`}
             value={String(d.monthly.repeatCustomers)}
-            detail="2回以上購入"
+            detail={t('twoPluspurchases')}
             borderColor="hsl(var(--chart-blue))"
-            tooltip="リピーター数 — LTV向上の鍵。フォロー施策や定期購入プランで増加を目指す"
+            tooltip={t('tooltipRepeatCustomers')}
           />
         </div>
       </section>
@@ -230,6 +230,7 @@ const DashboardPage = () => {
 
 // Simple EPC vs CPC visual comparison
 const EpcVsCpcVisual = ({ epc, cpc }: { epc: number; cpc: number }) => {
+  const { t } = useLocale();
   const isProfitable = epc > cpc;
   const diff = Math.abs(epc - cpc);
   const max = Math.max(epc, cpc);
@@ -268,8 +269,8 @@ const EpcVsCpcVisual = ({ epc, cpc }: { epc: number; cpc: number }) => {
         }}
       >
         {isProfitable
-          ? `✅ 黒字 — クリックあたり ¥${diff.toLocaleString()} の利益`
-          : `⚠️ 赤字 — クリックあたり ¥${diff.toLocaleString()} の損失`
+          ? `${t('adProfitable')} — ¥${diff.toLocaleString()} ${t('profitPerClick')}`
+          : `${t('adLoss')} — ¥${diff.toLocaleString()} ${t('lossPerClick')}`
         }
       </div>
     </div>

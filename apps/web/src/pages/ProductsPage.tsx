@@ -9,22 +9,22 @@ import type { Product, ProductCategory, BillingType } from '@/types';
 import AddProductModal from '@/components/modals/AddProductModal';
 import type { ProductFormData } from '@/components/modals/AddProductModal';
 
-const categoryLabels: Record<ProductCategory, string> = {
-  LIST_ACQUISITION: 'リスト獲得',
-  INDIVIDUAL: '個別',
-  SEMINAR: 'セミナー',
-  ONLINE_COURSE: 'オンライン講座',
-  SUBSCRIPTION: 'サブスクリプション',
-};
-
-const billingLabels: Record<BillingType, { label: string; color: string }> = {
-  ONE_TIME: { label: '一括', color: 'hsl(var(--chart-indigo))' },
-  RECURRING_MONTHLY: { label: '月額', color: 'hsl(var(--chart-emerald))' },
-  RECURRING_ANNUAL: { label: '年額', color: 'hsl(var(--chart-blue))' },
-};
-
 const ProductsPage = () => {
   const { t } = useLocale();
+
+  const categoryLabels: Record<ProductCategory, string> = {
+    LIST_ACQUISITION: t('catListAcquisition' as any),
+    INDIVIDUAL: t('catIndividual' as any),
+    SEMINAR: t('catSeminar' as any),
+    ONLINE_COURSE: t('catOnlineCourse' as any),
+    SUBSCRIPTION: t('catSubscription' as any),
+  };
+
+  const billingLabels: Record<BillingType, { label: string; color: string }> = {
+    ONE_TIME: { label: t('oneTime' as any), color: 'hsl(var(--chart-indigo))' },
+    RECURRING_MONTHLY: { label: t('recurringMonthly' as any), color: 'hsl(var(--chart-emerald))' },
+    RECURRING_ANNUAL: { label: t('recurringAnnual' as any), color: 'hsl(var(--chart-blue))' },
+  };
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -46,13 +46,13 @@ const ProductsPage = () => {
   };
 
   const handleDelete = async (product: Product) => {
-    if (!window.confirm(`「${product.name}」を削除しますか？`)) return;
+    if (!window.confirm(`「${product.name}」${t('confirmDelete' as any)}`)) return;
     try {
       await api.products.delete(product.id);
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.success(`商品「${product.name}」を削除しました`);
+      toast.success(`「${product.name}」${t('productDeleted' as any)}`);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : '削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('deleteFailed' as any));
     }
   };
 
@@ -66,7 +66,7 @@ const ProductsPage = () => {
           billingType: data.billingType,
           isActive: data.isActive,
         });
-        toast.success(`商品「${data.name}」を更新しました`);
+        toast.success(`「${data.name}」${t('productUpdated' as any)}`);
       } else {
         await api.products.create({
           name: data.name,
@@ -75,11 +75,11 @@ const ProductsPage = () => {
           billingType: data.billingType,
           isActive: data.isActive,
         });
-        toast.success(`商品「${data.name}」を追加しました`);
+        toast.success(`「${data.name}」${t('productAdded' as any)}`);
       }
       queryClient.invalidateQueries({ queryKey: ['products'] });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : '保存に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('saveFailed' as any));
     }
   };
 
@@ -169,7 +169,7 @@ const ProductsPage = () => {
           description: '',
           isActive: editingProduct.isActive,
         } : undefined}
-        title={editingProduct ? '商品を編集' : undefined}
+        title={editingProduct ? t('editProduct' as any) : undefined}
       />
     </div>
   );

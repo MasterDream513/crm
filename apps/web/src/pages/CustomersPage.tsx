@@ -10,25 +10,27 @@ import type { CustomerRank, ProspectStage } from '@/types';
 import NewCustomerModal from '@/components/modals/NewCustomerModal';
 import NewProspectModal from '@/components/modals/NewProspectModal';
 
-const rankConfig: Record<CustomerRank, { label: string; color: string }> = {
-  RANK_1: { label: '無料会員', color: 'hsl(var(--rank-1))' },
-  RANK_2: { label: '一般客', color: 'hsl(var(--rank-2))' },
-  RANK_3: { label: '優良客', color: 'hsl(var(--rank-3))' },
-  RANK_4: { label: 'VIP予備', color: 'hsl(var(--rank-4))' },
-  RANK_5: { label: 'VIP', color: 'hsl(var(--rank-5))' },
-  RANK_6: { label: 'スーパーVIP', color: 'hsl(var(--rank-6))' },
-};
+const getRankConfig = (t: (key: string) => string): Record<CustomerRank, { label: string; color: string }> => ({
+  RANK_1: { label: t('rank1'), color: 'hsl(var(--rank-1))' },
+  RANK_2: { label: t('rank2'), color: 'hsl(var(--rank-2))' },
+  RANK_3: { label: t('rank3'), color: 'hsl(var(--rank-3))' },
+  RANK_4: { label: t('rank4'), color: 'hsl(var(--rank-4))' },
+  RANK_5: { label: t('rank5'), color: 'hsl(var(--rank-5))' },
+  RANK_6: { label: t('rank6'), color: 'hsl(var(--rank-6))' },
+});
 
-const stageConfig: Record<ProspectStage, { label: string; color: string }> = {
-  LEAD: { label: 'リード', color: 'hsl(var(--rank-1))' },
-  SEMINAR: { label: 'セミナー', color: 'hsl(var(--rank-2))' },
-  NEGOTIATION: { label: '交渉中', color: 'hsl(var(--warning))' },
-  CLOSED_WON: { label: '成約', color: 'hsl(var(--profit))' },
-  CLOSED_LOST: { label: '失注', color: 'hsl(var(--loss))' },
-};
+const getStageConfig = (t: (key: string) => string): Record<ProspectStage, { label: string; color: string }> => ({
+  LEAD: { label: t('stageLead'), color: 'hsl(var(--rank-1))' },
+  SEMINAR: { label: t('stageSeminar'), color: 'hsl(var(--rank-2))' },
+  NEGOTIATION: { label: t('stageNegotiation'), color: 'hsl(var(--warning))' },
+  CLOSED_WON: { label: t('stageClosedWon'), color: 'hsl(var(--profit))' },
+  CLOSED_LOST: { label: t('stageClosedLost'), color: 'hsl(var(--loss))' },
+});
 
 const CustomersPage = () => {
   const { t } = useLocale();
+  const rankConfig = getRankConfig(t as any);
+  const stageConfig = getStageConfig(t as any);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'customers' | 'prospects'>('customers');
@@ -61,9 +63,9 @@ const CustomersPage = () => {
         queryClient.invalidateQueries({ queryKey: ['customers'] }),
         queryClient.invalidateQueries({ queryKey: ['prospects'] }),
       ]);
-      toast.success(`「${prospectName}」を顧客に変換しました`);
+      toast.success(`「${prospectName}」${t('convertedToCustomer')}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '変換に失敗しました');
+      toast.error(err instanceof Error ? err.message : t('conversionFailed'));
     }
   };
 
@@ -115,7 +117,7 @@ const CustomersPage = () => {
               onChange={(e) => setRankFilter(e.target.value)}
               className="rounded-lg border bg-card px-3 py-2 text-sm"
             >
-              <option value="">All Ranks</option>
+              <option value="">{t('allRanks')}</option>
               {Object.entries(rankConfig).map(([key, { label }]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
@@ -137,7 +139,7 @@ const CustomersPage = () => {
               {isLoadingCustomers ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">読み込み中...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">{t('loading')}</span>
                 </div>
               ) : (
                 <table className="w-full text-sm">
@@ -179,11 +181,11 @@ const CustomersPage = () => {
                         <td className="px-4 py-3">
                           {c.isDormant ? (
                             <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: 'hsl(var(--loss) / 0.1)', color: 'hsl(var(--loss))' }}>
-                              離脱リスク
+                              {t('dormant')}
                             </span>
                           ) : (
                             <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: 'hsl(var(--profit) / 0.1)', color: 'hsl(var(--profit))' }}>
-                              Active
+                              {t('active')}
                             </span>
                           )}
                         </td>
@@ -192,7 +194,7 @@ const CustomersPage = () => {
                     ))}
                     {customers.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">データがありません</td>
+                        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('noData')}</td>
                       </tr>
                     )}
                   </tbody>
@@ -209,7 +211,7 @@ const CustomersPage = () => {
             {isLoadingProspects ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">読み込み中...</span>
+                <span className="ml-2 text-sm text-muted-foreground">{t('loading')}</span>
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -253,7 +255,7 @@ const CustomersPage = () => {
                   ))}
                   {prospects.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">データがありません</td>
+                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('noData')}</td>
                     </tr>
                   )}
                 </tbody>
@@ -270,10 +272,10 @@ const CustomersPage = () => {
           try {
             await api.customers.create(data);
             await queryClient.invalidateQueries({ queryKey: ['customers'] });
-            toast.success(`顧客「${data.name}」を登録しました`);
+            toast.success(`「${data.name}」${t('customerRegistered')}`);
             setCustomerModalOpen(false);
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : '登録に失敗しました');
+            toast.error(err instanceof Error ? err.message : t('registrationFailed'));
           }
         }}
       />
@@ -291,10 +293,10 @@ const CustomersPage = () => {
               notes: data.notes,
             });
             await queryClient.invalidateQueries({ queryKey: ['prospects'] });
-            toast.success(`潜在顧客「${data.name}」を登録しました`);
+            toast.success(`「${data.name}」${t('prospectRegistered')}`);
             setProspectModalOpen(false);
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : '登録に失敗しました');
+            toast.error(err instanceof Error ? err.message : t('registrationFailed'));
           }
         }}
       />

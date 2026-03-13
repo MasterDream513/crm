@@ -14,14 +14,14 @@ import {
 import AddFollowLogModal from '@/components/modals/AddFollowLogModal';
 import AddReferralModal from '@/components/modals/AddReferralModal';
 
-const rankConfig: Record<CustomerRank, { label: string; color: string; level: number }> = {
-  RANK_1: { label: '無料会員', color: 'hsl(var(--rank-1))', level: 1 },
-  RANK_2: { label: '一般客', color: 'hsl(var(--rank-2))', level: 2 },
-  RANK_3: { label: '優良客', color: 'hsl(var(--rank-3))', level: 3 },
-  RANK_4: { label: 'VIP予備', color: 'hsl(var(--rank-4))', level: 4 },
-  RANK_5: { label: 'VIP', color: 'hsl(var(--rank-5))', level: 5 },
-  RANK_6: { label: 'スーパーVIP', color: 'hsl(var(--rank-6))', level: 6 },
-};
+const getRankConfig = (t: (key: string) => string): Record<CustomerRank, { label: string; color: string; level: number }> => ({
+  RANK_1: { label: t('rank1'), color: 'hsl(var(--rank-1))', level: 1 },
+  RANK_2: { label: t('rank2'), color: 'hsl(var(--rank-2))', level: 2 },
+  RANK_3: { label: t('rank3'), color: 'hsl(var(--rank-3))', level: 3 },
+  RANK_4: { label: t('rank4'), color: 'hsl(var(--rank-4))', level: 4 },
+  RANK_5: { label: t('rank5'), color: 'hsl(var(--rank-5))', level: 5 },
+  RANK_6: { label: t('rank6'), color: 'hsl(var(--rank-6))', level: 6 },
+});
 
 const followTypeIcon: Record<FollowLogType, React.ReactNode> = {
   CALL: <PhoneCall className="h-4 w-4" />,
@@ -32,19 +32,17 @@ const followTypeIcon: Record<FollowLogType, React.ReactNode> = {
   OTHER: <MoreHorizontal className="h-4 w-4" />,
 };
 
-const followTypeLabel: Record<FollowLogType, string> = {
-  CALL: '電話',
-  LINE: 'LINE',
-  MEETING: '面談',
-  EMAIL: 'メール',
-  LETTER: '手紙',
-  OTHER: 'その他',
-};
+const getFollowTypeLabel = (t: (key: string) => string): Record<FollowLogType, string> => ({
+  CALL: t('call'), LINE: t('line'), MEETING: t('meeting'),
+  EMAIL: t('email'), LETTER: t('letter'), OTHER: t('other'),
+});
 
 const CustomerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useLocale();
+  const rankConfig = getRankConfig(t as any);
+  const followTypeLabel = getFollowTypeLabel(t as any);
   const queryClient = useQueryClient();
   const [followModalOpen, setFollowModalOpen] = useState(false);
   const [referralModalOpen, setReferralModalOpen] = useState(false);
@@ -70,7 +68,7 @@ const CustomerDetailPage = () => {
         <button onClick={() => navigate('/customers')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> {t('customers')}
         </button>
-        <div className="text-center py-16 text-muted-foreground">顧客が見つかりません</div>
+        <div className="text-center py-16 text-muted-foreground">{t('customerNotFound')}</div>
       </div>
     );
   }
@@ -107,7 +105,7 @@ const CustomerDetailPage = () => {
             {customer.isDormant && (
               <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
                 style={{ backgroundColor: 'hsl(var(--loss) / 0.1)', color: 'hsl(var(--loss))' }}>
-                <AlertTriangle className="h-3 w-3" /> 離脱リスク
+                <AlertTriangle className="h-3 w-3" /> {t('dormant')}
               </span>
             )}
           </div>
@@ -123,7 +121,7 @@ const CustomerDetailPage = () => {
               <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{customer.address}</span>
             )}
             {customer.acquisitionSource && (
-              <span className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" />獲得元: {customer.acquisitionSource}</span>
+              <span className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" />{t('sourceLabel')}: {customer.acquisitionSource}</span>
             )}
           </div>
         </div>
@@ -133,7 +131,7 @@ const CustomerDetailPage = () => {
             onClick={() => setReferralModalOpen(true)}
             className="flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
           >
-            <Gift className="h-4 w-4" /> 紹介記録
+            <Gift className="h-4 w-4" /> {t('recordReferral')}
           </button>
           <button
             onClick={() => setFollowModalOpen(true)}
@@ -166,7 +164,7 @@ const CustomerDetailPage = () => {
           </div>
           {customer.daysSinceLastPurchase != null && customer.daysSinceLastPurchase > 60 && (
             <div className="text-[10px]" style={{ color: 'hsl(var(--loss))' }}>
-              {customer.daysSinceLastPurchase}日間未購入
+              {customer.daysSinceLastPurchase}{t('daysNoPurchase')}
             </div>
           )}
         </div>
@@ -177,12 +175,12 @@ const CustomerDetailPage = () => {
         <div className="rounded-xl border-l-4 bg-card p-4 shadow-sm" style={{ borderColor: 'hsl(var(--warning))' }}>
           <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'hsl(var(--warning))' }}>
             <Clock className="h-4 w-4" />
-            期限超過のフォローアップが {overdueFollows.length} 件あります
+            {t('overdueFollowups')} {overdueFollows.length} {t('overdueCount')}
           </div>
           <div className="mt-2 space-y-1">
             {overdueFollows.slice(0, 3).map((log) => (
               <div key={log.id} className="text-xs text-muted-foreground">
-                {followTypeLabel[log.type as FollowLogType]}: {log.nextAction || '—'} (期限: {formatDateJa(log.nextDueDate!)})
+                {followTypeLabel[log.type as FollowLogType]}: {log.nextAction || '—'} ({t('dueDate')}: {formatDateJa(log.nextDueDate!)})
               </div>
             ))}
           </div>
@@ -213,7 +211,7 @@ const CustomerDetailPage = () => {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('date')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">商品</th>
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('product')}</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t('amount')}</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('billingType')}</th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('memo')}</th>
@@ -226,7 +224,7 @@ const CustomerDetailPage = () => {
                     <td className="px-4 py-3 font-medium">{tx.product?.name || '—'}</td>
                     <td className="px-4 py-3 text-right font-medium">{formatYen(tx.amountJpy)}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {tx.billingType === 'RECURRING_MONTHLY' ? '月額' : tx.billingType === 'RECURRING_ANNUAL' ? '年額' : '一括'}
+                      {tx.billingType === 'RECURRING_MONTHLY' ? t('recurringMonthly') : tx.billingType === 'RECURRING_ANNUAL' ? t('recurringAnnual') : t('oneTime')}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{tx.note || '—'}</td>
                   </tr>
@@ -247,7 +245,7 @@ const CustomerDetailPage = () => {
         <div className="space-y-3">
           {followLogs.length === 0 ? (
             <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground shadow-sm">
-              フォロー履歴がありません
+              {t('noFollowHistory')}
             </div>
           ) : (
             followLogs.map((log) => {
@@ -266,15 +264,15 @@ const CustomerDetailPage = () => {
                         </div>
                         {log.notes && <p className="text-sm text-muted-foreground">{log.notes}</p>}
                         {log.outcome && (
-                          <p className="text-xs text-muted-foreground">結果: {log.outcome}</p>
+                          <p className="text-xs text-muted-foreground">{t('resultLabel')}: {log.outcome}</p>
                         )}
                         {log.nextAction && (
                           <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'font-semibold' : 'text-muted-foreground'}`}
                             style={isOverdue ? { color: 'hsl(var(--loss))' } : undefined}>
                             <Calendar className="h-3 w-3" />
-                            次回: {log.nextAction}
+                            {t('nextLabel')}: {log.nextAction}
                             {log.nextDueDate && ` (${formatDateJa(log.nextDueDate)})`}
-                            {isOverdue && ' — 期限超過'}
+                            {isOverdue && ` — ${t('overdue')}`}
                           </div>
                         )}
                       </div>
@@ -304,10 +302,10 @@ const CustomerDetailPage = () => {
               nextDueDate: data.nextDueDate ? new Date(data.nextDueDate).toISOString() : undefined,
             });
             await queryClient.invalidateQueries({ queryKey: ['customer', id] });
-            toast.success('フォローログを追加しました');
+            toast.success(t('followLogAdded'));
             setFollowModalOpen(false);
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : '追加に失敗しました');
+            toast.error(err instanceof Error ? err.message : t('addFailed'));
           }
         }}
       />
@@ -327,10 +325,10 @@ const CustomerDetailPage = () => {
               note: data.note || undefined,
             });
             await queryClient.invalidateQueries({ queryKey: ['customer', id] });
-            toast.success('紹介を記録しました');
+            toast.success(t('referralRecorded'));
             setReferralModalOpen(false);
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : '記録に失敗しました');
+            toast.error(err instanceof Error ? err.message : t('recordFailed'));
           }
         }}
       />

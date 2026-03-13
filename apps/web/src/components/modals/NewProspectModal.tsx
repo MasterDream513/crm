@@ -18,18 +18,18 @@ export interface ProspectFormData {
   notes: string;
 }
 
-const sourceOptions = ['Web', 'セミナー', '紹介', 'Meta広告', 'LINE', 'Google広告', 'YouTube', 'その他'];
-
-const stageOptions: { value: ProspectStage; label: string }[] = [
-  { value: 'LEAD', label: 'リード' },
-  { value: 'SEMINAR', label: 'セミナー' },
-  { value: 'NEGOTIATION', label: '交渉中' },
-  { value: 'CLOSED_WON', label: '成約' },
-  { value: 'CLOSED_LOST', label: '失注' },
-];
-
 const NewProspectModal = ({ open, onClose, onSubmit }: NewProspectModalProps) => {
   const { t } = useLocale();
+
+  const sourceOptions = [t('srcWeb'), t('srcSeminar'), t('srcReferral'), t('srcMeta'), t('srcLine'), t('srcGoogle'), t('srcYouTube'), t('srcOther')];
+
+  const stageOptions: { value: ProspectStage; label: string }[] = [
+    { value: 'LEAD', label: t('stageLead') },
+    { value: 'SEMINAR', label: t('stageSeminar') },
+    { value: 'NEGOTIATION', label: t('stageNegotiation') },
+    { value: 'CLOSED_WON', label: t('stageClosedWon') },
+    { value: 'CLOSED_LOST', label: t('stageClosedLost') },
+  ];
   const [form, setForm] = useState<ProspectFormData>({
     name: '',
     email: '',
@@ -44,10 +44,10 @@ const NewProspectModal = ({ open, onClose, onSubmit }: NewProspectModalProps) =>
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.name.trim()) e.name = '名前は必須です';
-    else if (form.name.length > 100) e.name = '100文字以内で入力してください';
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = '有効なメールアドレスを入力してください';
-    if (form.phone && !/^[\d\-+() ]{0,20}$/.test(form.phone)) e.phone = '有効な電話番号を入力してください';
+    if (!form.name.trim()) e.name = t('nameRequired');
+    else if (form.name.length > 100) e.name = t('maxChars100');
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t('validEmail');
+    if (form.phone && !/^[\d\-+() ]{0,20}$/.test(form.phone)) e.phone = t('validPhone');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -89,7 +89,7 @@ const NewProspectModal = ({ open, onClose, onSubmit }: NewProspectModalProps) =>
             <input
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
-              placeholder="山田太郎"
+              placeholder={t('placeholderName')}
               className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
@@ -133,7 +133,7 @@ const NewProspectModal = ({ open, onClose, onSubmit }: NewProspectModalProps) =>
                 onChange={(e) => set('source', e.target.value)}
                 className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
-                <option value="">選択してください</option>
+                <option value="">{t('selectPlease')}</option>
                 {sourceOptions.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -157,7 +157,7 @@ const NewProspectModal = ({ open, onClose, onSubmit }: NewProspectModalProps) =>
               onChange={(e) => set('notes', e.target.value)}
               rows={3}
               maxLength={500}
-              placeholder="備考を入力..."
+              placeholder={t('enterNotes')}
               className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-shadow"
             />
             <p className="text-xs text-muted-foreground text-right">{form.notes.length}/500</p>

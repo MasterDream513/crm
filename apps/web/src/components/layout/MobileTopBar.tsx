@@ -6,26 +6,26 @@ interface MobileTopBarProps {
   onMenuClick: () => void;
 }
 
-const pageTitles: Record<string, { ja: string; en: string }> = {
-  '/': { ja: 'ダッシュボード', en: 'Dashboard' },
-  '/customers': { ja: '顧客管理', en: 'Customers' },
-  '/sales': { ja: '売上入力', en: 'Sales' },
-  '/products': { ja: '商品管理', en: 'Products' },
-  '/expenses': { ja: '経費', en: 'Expenses' },
-  '/events': { ja: 'セミナー・イベント', en: 'Events' },
-  '/marketing': { ja: 'マーケティング', en: 'Marketing' },
-  '/settings': { ja: '設定', en: 'Settings' },
+const pageTitleKeys: Record<string, string> = {
+  '/': 'dashboard',
+  '/customers': 'customers',
+  '/sales': 'sales',
+  '/products': 'products',
+  '/expenses': 'expense',
+  '/events': 'events',
+  '/marketing': 'marketing',
+  '/settings': 'settings',
 };
 
 export const MobileTopBar = ({ onMenuClick }: MobileTopBarProps) => {
-  const { locale, toggleLocale } = useLocale();
+  const { locale, toggleLocale, t } = useLocale();
   const location = useLocation();
 
-  const matchedPath = Object.keys(pageTitles).find(
+  const matchedPath = Object.keys(pageTitleKeys).find(
     (p) => p === '/' ? location.pathname === '/' : location.pathname.startsWith(p)
   ) || '/';
 
-  const title = pageTitles[matchedPath]?.[locale] || '';
+  const title = t(pageTitleKeys[matchedPath] as any) || '';
 
   return (
     <div className="flex items-center justify-between border-b bg-card px-4 py-3 lg:hidden">

@@ -52,7 +52,7 @@ const AddReferralModal: React.FC<AddReferralModalProps> = ({ open, onClose, refe
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-lg rounded-xl bg-card border shadow-xl p-6 mx-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold">紹介を記録</h2>
+          <h2 className="text-lg font-bold">{t('recordReferralTitle')}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
             <X className="h-4 w-4" />
           </button>
@@ -61,24 +61,24 @@ const AddReferralModal: React.FC<AddReferralModalProps> = ({ open, onClose, refe
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Referrer (read-only) */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">紹介元</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t('referrer')}</label>
             <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm font-medium">{referrerName}</div>
           </div>
 
           {/* Search and select referred customer */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">紹介先（被紹介者）</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t('referred')}</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="顧客名で検索..."
+                placeholder={t('searchCustomer')}
                 className="w-full rounded-lg border bg-background pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             {selectedName && (
-              <div className="mt-1 text-xs text-primary font-medium">選択中: {selectedName}</div>
+              <div className="mt-1 text-xs text-primary font-medium">{t('selected')}: {selectedName}</div>
             )}
             {search && filteredCustomers.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto rounded-lg border bg-background">
@@ -113,7 +113,7 @@ const AddReferralModal: React.FC<AddReferralModalProps> = ({ open, onClose, refe
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="任意メモ"
+                placeholder={t('optionalMemo')}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -129,7 +129,7 @@ const AddReferralModal: React.FC<AddReferralModalProps> = ({ open, onClose, refe
               disabled={submitting || !selectedCustomerId}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {submitting ? '保存中...' : '紹介を記録'}
+              {submitting ? t('saving') : t('recordReferralTitle')}
             </button>
           </div>
         </form>
