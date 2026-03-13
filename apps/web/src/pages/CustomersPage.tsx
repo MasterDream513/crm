@@ -4,7 +4,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatYen, formatRelativeDate } from '@/lib/format';
-import { Search, Users, UserPlus, Loader2 } from 'lucide-react';
+import { Search, Users, UserPlus, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CustomerRank, ProspectStage } from '@/types';
 import NewCustomerModal from '@/components/modals/NewCustomerModal';
@@ -39,6 +39,8 @@ const CustomersPage = () => {
   const [dormantOnly, setDormantOnly] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [prospectModalOpen, setProspectModalOpen] = useState(false);
+  const [editingProspectId, setEditingProspectId] = useState<string | null>(null);
+  const [editStage, setEditStage] = useState<ProspectStage>('LEAD');
 
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers', search, rankFilter, dormantOnly],
@@ -66,6 +68,17 @@ const CustomersPage = () => {
       toast.success(`「${prospectName}」${t('convertedToCustomer')}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('conversionFailed'));
+    }
+  };
+
+  const handleUpdateProspectStage = async (prospectId: string) => {
+    try {
+      await api.prospects.update(prospectId, { stage: editStage });
+      await queryClient.invalidateQueries({ queryKey: ['prospects'] });
+      toast.success(t('stageUpdated'));
+      setEditingProspectId(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('updateFailed'));
     }
   };
 
@@ -234,22 +247,62 @@ const CustomersPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                          style={{ backgroundColor: `${stageConfig[p.stage].color}20`, color: stageConfig[p.stage].color }}
-                        >
-                          {stageConfig[p.stage].label}
-                        </span>
+                        {editingProspectId === p.id ? (
+                          <select
+                            value={editStage}
+                            onChange={(e) => setEditStage(e.target.value as ProspectStage)}
+                            className="rounded-lg border bg-background px-2 py-1 text-xs"
+                          >
+                            {Object.entries(stageConfig).map(([key, { label }]) => (
+                              <option key={key} value={key}>{label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                            style={{ backgroundColor: `${stageConfig[p.stage].color}20`, color: stageConfig[p.stage].color }}
+                          >
+                            {stageConfig[p.stage].label}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{p.acquisitionSource || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{formatRelativeDate(p.createdAt)}</td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleConvertToCustomer(p.id, p.name)}
-                          className="rounded-md border px-3 py-1 text-xs font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
-                          {t('convertToCustomer')}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {editingProspectId === p.id ? (
+                            <>
+                              <button
+                                onClick={() => handleUpdateProspectStage(p.id)}
+                                className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+                              >
+                                {t('save')}
+                              </button>
+                              <button
+                                onClick={() => setEditingProspectId(null)}
+                                className="rounded-md border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                              >
+                                {t('cancel')}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => { setEditingProspectId(p.id); setEditStage(p.stage); }}
+                                className="rounded-md border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                                title={t('edit')}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => handleConvertToCustomer(p.id, p.name)}
+                                className="rounded-md border px-3 py-1 text-xs font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                              >
+                                {t('convertToCustomer')}
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
