@@ -18,54 +18,59 @@ const customerSchema = z.object({
 })
 
 customerRoutes.get('/', async (c) => {
-  const { tenantId } = c.get('user')
-  const {
-    q, rank, dormant, source,
-    limit = '50', offset = '0',
-  } = c.req.query()
+  try {
+    const { tenantId } = c.get('user')
+    const {
+      q, rank, dormant, source,
+      limit = '50', offset = '0',
+    } = c.req.query()
 
-  const settings = await prisma.tenantSettings.findUnique({ where: { tenantId } })
-  const churnDays = settings?.churnThresholdDays ?? 90
-  const churnDate = new Date()
-  churnDate.setDate(churnDate.getDate() - churnDays)
+    const settings = await prisma.tenantSettings.findUnique({ where: { tenantId } })
+    const churnDays = settings?.churnThresholdDays ?? 90
+    const churnDate = new Date()
+    churnDate.setDate(churnDate.getDate() - churnDays)
 
-  const customers = await prisma.customer.findMany({
-    where: {
-      tenantId,
-      deletedAt: null,
-      ...(q ? { name: { contains: q, mode: 'insensitive' } } : {}),
-      ...(rank ? { rank: rank as any } : {}),
-      ...(dormant === 'true'
-        ? {
-            OR: [
-              { lastPurchaseDate: { lt: churnDate } },
-              { lastPurchaseDate: null },
-            ],
-          }
-        : {}),
-      ...(source ? { acquisitionSource: source } : {}),
-    },
-    include: {
-      _count: { select: { transactions: true, followLogs: true, referralsGiven: true } },
-    },
-    orderBy: [{ rank: 'desc' }, { lastPurchaseDate: 'desc' }],
-    take: parseInt(limit),
-    skip: parseInt(offset),
-  })
+    const customers = await prisma.customer.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        ...(q ? { name: { contains: q, mode: 'insensitive' } } : {}),
+        ...(rank ? { rank: rank as any } : {}),
+        ...(dormant === 'true'
+          ? {
+              OR: [
+                { lastPurchaseDate: { lt: churnDate } },
+                { lastPurchaseDate: null },
+              ],
+            }
+          : {}),
+        ...(source ? { acquisitionSource: source } : {}),
+      },
+      include: {
+        _count: { select: { transactions: true, followLogs: true, referralsGiven: true } },
+      },
+      orderBy: [{ rank: 'desc' }, { lastPurchaseDate: 'desc' }],
+      take: parseInt(limit),
+      skip: parseInt(offset),
+    })
 
-  // Annotate with dormant flag
-  const now = new Date()
-  return c.json(
-    customers.map((cust) => ({
-      ...cust,
-      isDormant:
-        !cust.lastPurchaseDate ||
-        (now.getTime() - cust.lastPurchaseDate.getTime()) / 86_400_000 > churnDays,
-      daysSinceLastPurchase: cust.lastPurchaseDate
-        ? Math.floor((now.getTime() - cust.lastPurchaseDate.getTime()) / 86_400_000)
-        : null,
-    }))
-  )
+    // Annotate with dormant flag
+    const now = new Date()
+    return c.json(
+      customers.map((cust) => ({
+        ...cust,
+        isDormant:
+          !cust.lastPurchaseDate ||
+          (now.getTime() - cust.lastPurchaseDate.getTime()) / 86_400_000 > churnDays,
+        daysSinceLastPurchase: cust.lastPurchaseDate
+          ? Math.floor((now.getTime() - cust.lastPurchaseDate.getTime()) / 86_400_000)
+          : null,
+      }))
+    )
+  } catch (err) {
+    console.error('Customers list error:', err)
+    return c.json({ error: 'Failed to load customers', detail: String(err) }, 500)
+  }
 })
 
 customerRoutes.post('/', zValidator('json', customerSchema), async (c) => {

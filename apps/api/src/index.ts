@@ -19,6 +19,12 @@ import { settingsRoutes, integrationsRoutes } from './routes/v1/settings.js'
 
 const app = new Hono()
 
+// ── Global error handler ────────────────────────────────────
+app.onError((err, c) => {
+  console.error(`[${c.req.method} ${c.req.path}] Error:`, err)
+  return c.json({ error: 'Internal Server Error', detail: String(err) }, 500)
+})
+
 // ── Middleware ──────────────────────────────────────────────
 app.use('*', logger())
 app.use(
