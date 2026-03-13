@@ -32,7 +32,15 @@ app.use(
 )
 
 // ── Health ──────────────────────────────────────────────────
-app.get('/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString() }))
+app.get('/health', async (c) => {
+  try {
+    const { prisma } = await import('./lib/prisma.js')
+    await prisma.$queryRaw`SELECT 1`
+    return c.json({ status: 'ok', db: 'connected', ts: new Date().toISOString() })
+  } catch (err) {
+    return c.json({ status: 'ok', db: 'error', dbError: String(err), ts: new Date().toISOString() })
+  }
+})
 
 // ── API v1 ──────────────────────────────────────────────────
 const v1 = new Hono()

@@ -13,33 +13,38 @@ const loginSchema = z.object({
 })
 
 authRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
-  const { email, password } = c.req.valid('json')
+  try {
+    const { email, password } = c.req.valid('json')
 
-  const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password })
-  if (error) {
-    return c.json({ error: 'メールアドレスまたはパスワードが正しくありません' }, 401)
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password })
+    if (error) {
+      return c.json({ error: 'メールアドレスまたはパスワードが正しくありません' }, 401)
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { email, deletedAt: null },
+      include: { tenant: { include: { settings: true } } },
+    })
+
+    if (!user) {
+      return c.json({ error: 'ユーザーが見つかりません' }, 401)
+    }
+
+    return c.json({
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+        tenantName: user.tenant.name,
+      },
+    })
+  } catch (err) {
+    console.error('Login error:', err)
+    return c.json({ error: 'ログインに失敗しました', detail: String(err) }, 500)
   }
-
-  const user = await prisma.user.findFirst({
-    where: { email, deletedAt: null },
-    include: { tenant: { include: { settings: true } } },
-  })
-
-  if (!user) {
-    return c.json({ error: 'ユーザーが見つかりません' }, 401)
-  }
-
-  return c.json({
-    accessToken: data.session.access_token,
-    refreshToken: data.session.refresh_token,
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      tenantId: user.tenantId,
-      tenantName: user.tenant.name,
-    },
-  })
 })
 
 authRoutes.post('/logout', authMiddleware, async (c) => {
