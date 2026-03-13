@@ -30,9 +30,15 @@ app.use('*', logger())
 app.use(
   '*',
   cors({
-    origin: process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:8080'],
+    origin: (origin) => {
+      const allowed = process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+        : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:8080']
+      if (!origin) return allowed[0]
+      if (allowed.includes(origin)) return origin
+      if (origin.endsWith('.vercel.app')) return origin
+      return allowed[0]
+    },
     credentials: true,
   })
 )
