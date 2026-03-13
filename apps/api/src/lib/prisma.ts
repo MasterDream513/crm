@@ -10,9 +10,11 @@ declare global {
 function createPrismaClient() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 10,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
+    max: 5,
+    idleTimeoutMillis: 60_000,
+    connectionTimeoutMillis: 30_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
     ssl: { rejectUnauthorized: false },
   })
   const adapter = new PrismaPg(pool)
