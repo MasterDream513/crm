@@ -54,6 +54,26 @@ authRoutes.post('/logout', authMiddleware, async (c) => {
   return c.json({ ok: true })
 })
 
+authRoutes.post('/refresh', async (c) => {
+  try {
+    const { refreshToken } = await c.req.json<{ refreshToken: string }>()
+    if (!refreshToken) return c.json({ error: 'Missing refreshToken' }, 400)
+
+    const { data, error } = await supabaseAdmin.auth.refreshSession({ refresh_token: refreshToken })
+    if (error || !data.session) {
+      return c.json({ error: 'Token refresh failed' }, 401)
+    }
+
+    return c.json({
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    })
+  } catch (err) {
+    console.error('Refresh error:', err)
+    return c.json({ error: 'Token refresh failed', detail: String(err) }, 500)
+  }
+})
+
 authRoutes.get('/me', authMiddleware, async (c) => {
   const u = c.get('user')
   const user = await prisma.user.findUnique({

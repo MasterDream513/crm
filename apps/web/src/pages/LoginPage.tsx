@@ -22,7 +22,7 @@ const LoginPage = () => {
 
     try {
       const res = await api.auth.login(email, password);
-      login(res.accessToken, res.user);
+      login(res.accessToken, res.user, res.refreshToken);
       navigate('/', { replace: true });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Login failed');

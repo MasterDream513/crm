@@ -4,7 +4,7 @@ import type { AuthUser } from '@/types';
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
-  login: (token: string, user: AuthUser) => void;
+  login: (token: string, user: AuthUser, refreshToken?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -18,15 +18,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('crm_access_token'));
 
-  const login = useCallback((t: string, u: AuthUser) => {
+  const login = useCallback((t: string, u: AuthUser, refreshToken?: string) => {
     localStorage.setItem('crm_access_token', t);
     localStorage.setItem('crm_user', JSON.stringify(u));
+    if (refreshToken) localStorage.setItem('crm_refresh_token', refreshToken);
     setToken(t);
     setUser(u);
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('crm_access_token');
+    localStorage.removeItem('crm_refresh_token');
     localStorage.removeItem('crm_user');
     setToken(null);
     setUser(null);

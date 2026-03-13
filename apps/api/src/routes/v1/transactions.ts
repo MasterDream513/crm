@@ -10,17 +10,18 @@ transactionRoutes.use('*', authMiddleware)
 
 const transactionSchema = z.object({
   customerId: z.string().uuid(),
-  productId: z.string().uuid().nullish().or(z.literal('')).transform(v => v || undefined),
+  productId: z.union([z.string().uuid(), z.literal(''), z.null()]).optional(),
   amountJpy: z.number().int().min(0),
   billingType: z.enum(['ONE_TIME', 'RECURRING_MONTHLY', 'RECURRING_ANNUAL']).default('ONE_TIME'),
   subscriptionStatus: z.enum(['ACTIVE', 'PAUSED', 'CANCELLED']).optional(),
-  transactionDate: z.string().datetime(),
+  transactionDate: z.string(),
   note: z.string().optional(),
 })
 
 transactionRoutes.post('/', zValidator('json', transactionSchema), async (c) => {
   const { tenantId } = c.get('user')
   const data = c.req.valid('json')
+  const cleanProductId = data.productId && data.productId !== '' ? data.productId : undefined
 
   const tx = await prisma.$transaction(async (db) => {
     // Create transaction
@@ -28,7 +29,7 @@ transactionRoutes.post('/', zValidator('json', transactionSchema), async (c) => 
       data: {
         tenantId,
         customerId: data.customerId,
-        productId: data.productId,
+        productId: cleanProductId,
         amountJpy: data.amountJpy,
         billingType: data.billingType,
         subscriptionStatus: data.subscriptionStatus,

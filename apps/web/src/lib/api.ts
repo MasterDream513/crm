@@ -5,6 +5,28 @@ const headers = (): HeadersInit => ({
   'Authorization': `Bearer ${localStorage.getItem('crm_access_token') || ''}`,
 });
 
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = localStorage.getItem('crm_refresh_token');
+  if (!refreshToken) return false;
+
+  try {
+    const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    localStorage.setItem('crm_access_token', data.accessToken);
+    localStorage.setItem('crm_refresh_token', data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown, params?: Record<string, string>): Promise<T> {
   let url = `${API_URL}${path}`;
   if (params) {
@@ -14,14 +36,31 @@ async function request<T>(method: string, path: string, body?: unknown, params?:
     if (searchParams.toString()) url += `?${searchParams.toString()}`;
   }
 
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     method,
     headers: headers(),
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  // Auto-refresh on 401
+  if (res.status === 401 && !path.includes('/auth/login')) {
+    if (!refreshPromise) {
+      refreshPromise = tryRefreshToken().finally(() => { refreshPromise = null; });
+    }
+    const refreshed = await refreshPromise;
+    if (refreshed) {
+      // Retry with new token
+      res = await fetch(url, {
+        method,
+        headers: headers(),
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    }
+  }
+
   if (res.status === 401) {
     localStorage.removeItem('crm_access_token');
+    localStorage.removeItem('crm_refresh_token');
     localStorage.removeItem('crm_user');
     window.location.href = '/login';
     throw new Error('Unauthorized');
