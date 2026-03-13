@@ -7,20 +7,25 @@ export const kpiRoutes = new Hono()
 kpiRoutes.use('*', authMiddleware)
 
 kpiRoutes.get('/dashboard', async (c) => {
-  const { tenantId } = c.get('user')
-  const now = new Date()
+  try {
+    const { tenantId } = c.get('user')
+    const now = new Date()
 
-  const settings = await prisma.tenantSettings.findUnique({ where: { tenantId } })
-  const churnDays = settings?.churnThresholdDays ?? 90
-  const marginRate = settings?.maCpsMarginRate ?? 0.60
+    const settings = await prisma.tenantSettings.findUnique({ where: { tenantId } })
+    const churnDays = settings?.churnThresholdDays ?? 90
+    const marginRate = settings?.maCpsMarginRate ?? 0.60
 
-  const [daily, weekly, monthly] = await Promise.all([
-    getDailyKpi(tenantId, now, churnDays),
-    getWeeklyKpi(tenantId, now),
-    getMonthlyKpi(tenantId, now, marginRate),
-  ])
+    const [daily, weekly, monthly] = await Promise.all([
+      getDailyKpi(tenantId, now, churnDays),
+      getWeeklyKpi(tenantId, now),
+      getMonthlyKpi(tenantId, now, marginRate),
+    ])
 
-  return c.json({ daily, weekly, monthly, generatedAt: now.toISOString() })
+    return c.json({ daily, weekly, monthly, generatedAt: now.toISOString() })
+  } catch (err) {
+    console.error('KPI dashboard error:', err)
+    return c.json({ error: 'Failed to load dashboard KPIs', detail: String(err) }, 500)
+  }
 })
 
 async function getDailyKpi(tenantId: string, now: Date, churnDays: number) {
@@ -173,7 +178,7 @@ async function getMonthlyKpi(tenantId: string, now: Date, marginRate: number) {
     where: { tenantId, deletedAt: null },
     _avg: { cumulativeSpend: true },
   })
-  const ltvAvg = ltvAgg._avg.cumulativeSpend ?? 0
+  const ltvAvg = Number(ltvAgg._avg.cumulativeSpend ?? 0)
   const maCps = calcMaCps(ltvAvg, marginRate)
 
   const repeatCustomerResult = await prisma.$queryRaw<{ count: bigint }[]>`
