@@ -32,6 +32,12 @@ Thumbs.db
 .idea/
 *.swp
 
+# Claude Code
+.claude/
+
+# Temp scripts
+check-db.ts
+
 # Test
 coverage/
 playwright-report/

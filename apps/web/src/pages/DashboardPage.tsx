@@ -231,9 +231,12 @@ const DashboardPage = () => {
 // Simple EPC vs CPC visual comparison
 const EpcVsCpcVisual = ({ epc, cpc }: { epc: number; cpc: number }) => {
   const { t } = useLocale();
+  const noData = epc === 0 && cpc === 0;
   const isProfitable = epc > cpc;
   const diff = Math.abs(epc - cpc);
   const max = Math.max(epc, cpc);
+  const epcWidth = max > 0 ? (epc / max) * 100 : 0;
+  const cpcWidth = max > 0 ? (cpc / max) * 100 : 0;
 
   return (
     <div className="space-y-4 py-2">
@@ -245,7 +248,7 @@ const EpcVsCpcVisual = ({ epc, cpc }: { epc: number; cpc: number }) => {
         <div className="h-3 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
-            style={{ width: `${(epc / max) * 100}%`, backgroundColor: 'hsl(var(--chart-emerald))' }}
+            style={{ width: `${epcWidth}%`, backgroundColor: 'hsl(var(--chart-emerald))' }}
           />
         </div>
       </div>
@@ -257,20 +260,22 @@ const EpcVsCpcVisual = ({ epc, cpc }: { epc: number; cpc: number }) => {
         <div className="h-3 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
-            style={{ width: `${(cpc / max) * 100}%`, backgroundColor: 'hsl(var(--chart-rose))' }}
+            style={{ width: `${cpcWidth}%`, backgroundColor: 'hsl(var(--chart-rose))' }}
           />
         </div>
       </div>
       <div
         className="rounded-lg p-3 text-center text-sm font-medium"
         style={{
-          backgroundColor: isProfitable ? 'hsl(var(--profit) / 0.1)' : 'hsl(var(--loss) / 0.1)',
-          color: isProfitable ? 'hsl(var(--profit))' : 'hsl(var(--loss))',
+          backgroundColor: noData ? 'hsl(var(--muted))' : isProfitable ? 'hsl(var(--profit) / 0.1)' : 'hsl(var(--loss) / 0.1)',
+          color: noData ? 'hsl(var(--muted-foreground))' : isProfitable ? 'hsl(var(--profit))' : 'hsl(var(--loss))',
         }}
       >
-        {isProfitable
-          ? `${t('adProfitable')} — ¥${diff.toLocaleString()} ${t('profitPerClick')}`
-          : `${t('adLoss')} — ¥${diff.toLocaleString()} ${t('lossPerClick')}`
+        {noData
+          ? t('noDataYet')
+          : isProfitable
+            ? `${t('adProfitable')} — ¥${diff.toLocaleString()} ${t('profitPerClick')}`
+            : `${t('adLoss')} — ¥${diff.toLocaleString()} ${t('lossPerClick')}`
         }
       </div>
     </div>
