@@ -3,7 +3,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatDateJa } from '@/lib/format';
-import { Plus, Loader2, Calendar, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Loader2, Calendar, Users, CheckCircle, XCircle, Clock, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EventItem {
@@ -33,6 +33,9 @@ const EventsPage = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
+  const [participantType, setParticipantType] = useState<'customer' | 'prospect'>('customer');
+  const [participantId, setParticipantId] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
   const [form, setForm] = useState({ name: '', eventDate: today, description: '' });
@@ -95,6 +98,47 @@ const EventsPage = () => {
       toast.success(t('statusUpdated'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('updateFailed'));
+    }
+  };
+
+  // Fetch customers and prospects for adding participants
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => api.customers.list(),
+    enabled: addParticipantOpen,
+  });
+  const { data: prospects = [] } = useQuery({
+    queryKey: ['prospects'],
+    queryFn: () => api.prospects.list(),
+    enabled: addParticipantOpen && participantType === 'prospect',
+  });
+
+  const handleAddParticipant = async () => {
+    if (!participantId || !selectedEventId) return;
+    try {
+      const body: Record<string, string> = {};
+      if (participantType === 'customer') body.customerId = participantId;
+      else body.prospectId = participantId;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/events/${selectedEventId}/attendees`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('crm_access_token') || ''}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!res.ok) throw new Error(t('addFailed'));
+      await queryClient.invalidateQueries({ queryKey: ['event-attendees', selectedEventId] });
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success(t('participantAdded'));
+      setParticipantId('');
+      setAddParticipantOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('addFailed'));
     }
   };
 
@@ -165,10 +209,58 @@ const EventsPage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-xl border bg-card p-4 shadow-sm">
-                <h3 className="text-lg font-semibold">{selectedEvent?.name}</h3>
-                <p className="text-xs text-muted-foreground">{selectedEvent?.eventDate && formatDateJa(selectedEvent.eventDate)}</p>
+              <div className="rounded-xl border bg-card p-4 shadow-sm flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{selectedEvent?.name}</h3>
+                  <p className="text-xs text-muted-foreground">{selectedEvent?.eventDate && formatDateJa(selectedEvent.eventDate)}</p>
+                </div>
+                <button
+                  onClick={() => setAddParticipantOpen(!addParticipantOpen)}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  <UserPlus className="h-3.5 w-3.5" /> {t('addParticipant')}
+                </button>
               </div>
+
+              {/* Add Participant Form */}
+              {addParticipantOpen && (
+                <div className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+                  <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+                    <button
+                      onClick={() => { setParticipantType('customer'); setParticipantId(''); }}
+                      className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${participantType === 'customer' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    >
+                      {t('existingCustomer')}
+                    </button>
+                    <button
+                      onClick={() => { setParticipantType('prospect'); setParticipantId(''); }}
+                      className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${participantType === 'prospect' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    >
+                      {t('prospectLabel')}
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={participantId}
+                      onChange={(e) => setParticipantId(e.target.value)}
+                      className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">{t('selectParticipant')}</option>
+                      {participantType === 'customer'
+                        ? customers.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)
+                        : prospects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)
+                      }
+                    </select>
+                    <button
+                      onClick={handleAddParticipant}
+                      disabled={!participantId}
+                      className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {t('add')}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Attendance Stats */}
               <div className="grid grid-cols-3 gap-3">
