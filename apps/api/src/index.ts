@@ -92,6 +92,42 @@ app.get('/health', async (c) => {
   return c.json(diag)
 })
 
+// ── Auth diagnostic (temporary) ─────────────────────────────
+app.get('/health/auth-test', async (c) => {
+  const diag: Record<string, unknown> = {}
+  try {
+    const { supabaseAdmin } = await import('./lib/supabase.js')
+    diag.supabaseUrl = process.env.SUPABASE_URL ?? '(not set)'
+    diag.serviceKeySet = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    // Test signInWithPassword with dummy password to verify Supabase Auth is reachable
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+      email: 'after.seitai@gmail.com',
+      password: 'wrong-password-test',
+    })
+    diag.authReachable = true
+    diag.authError = error ? { message: error.message, status: error.status } : null
+    diag.authData = data?.user ? 'user returned' : 'no user'
+  } catch (err) {
+    diag.authReachable = false
+    diag.authThrown = String(err)
+  }
+
+  // Test Prisma model query
+  try {
+    const { prisma } = await import('./lib/prisma.js')
+    const user = await prisma.user.findFirst({
+      where: { email: 'after.seitai@gmail.com', deletedAt: null },
+      include: { tenant: { include: { settings: true } } },
+    })
+    diag.dbUser = user ? { id: user.id, tenantId: user.tenantId } : null
+  } catch (err) {
+    diag.dbUserError = String(err)
+  }
+
+  return c.json(diag)
+})
+
 // ── API v1 ──────────────────────────────────────────────────
 const v1 = new Hono()
 v1.route('/auth', authRoutes)
